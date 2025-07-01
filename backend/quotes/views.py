@@ -38,13 +38,13 @@ class IsApprovedUser(permissions.BasePermission):
 class QuoteViewSet(viewsets.ModelViewSet):
     queryset = Quote.objects.all()
     serializer_class = QuoteSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsApprovedUser]
 
     def get_queryset(self):
         user = self.request.user
         if user.is_superuser:
             return Quote.objects.all()
-        return Quote.objects.filter(is_public=True)
+        return Quote.objects.filter(visible=True)
 
     def perform_create(self, serializer):
         serializer.save()

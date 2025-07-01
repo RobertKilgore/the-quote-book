@@ -44,7 +44,7 @@ function App() {
             path="/"
             element={
               <PrivateRoute user={user} loading={loading}>
-                <HomePage />
+                <HomePage user={user}/>
               </PrivateRoute>
             }
           />
@@ -53,7 +53,7 @@ function App() {
             path="/quote/:id"
             element={
               <PrivateRoute user={user} loading={loading}>
-                <QuoteDetailPage />
+                <QuoteDetailPage user={user}/>
               </PrivateRoute>
             }
           />
@@ -62,7 +62,7 @@ function App() {
             path="/create-quote"
             element={
               <AdminRoute user={user} loading={loading}>
-                <CreateQuotePage />
+                <CreateQuotePage user={user}/>
               </AdminRoute>
             }
           />

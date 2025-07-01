@@ -3,21 +3,25 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 
-
 export default function HomePage({ user }) {
   const [quotes, setQuotes] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api
-      .get("/api/quotes/", { withCredentials: true })
-      .then((res) => setQuotes(res.data))
+    api.get("/api/quotes/", { withCredentials: true })
+      .then((res) => {
+        const isAdmin = user?.isSuperuser;
+        const visibleQuotes = isAdmin
+          ? res.data
+          : res.data.filter((q) => q.visible);
+        setQuotes(visibleQuotes);
+      })
       .catch(() => setQuotes([]));
-  }, []);
+  }, [user]);
 
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-4">
-      <h2 className="text-2xl font-semibold mb-4">Public Quotes</h2>
+      <h2 className="text-2xl font-semibold mb-4">Quotes</h2>
       {quotes.length === 0 ? (
         <p>No quotes available.</p>
       ) : (
@@ -27,19 +31,19 @@ export default function HomePage({ user }) {
             onClick={() => navigate(`/quote/${q.id}`)}
             className="bg-white p-4 shadow rounded cursor-pointer hover:bg-gray-50 transition"
           >
-            {q.redacted ? (
-              <div className="text-red-600 font-bold">REDACTED</div>
-            ) : (
-              q.lines.map((line, idx) => (
-                <div key={idx} className="mb-1">
-                  <span className="font-semibold">{line.speaker_name}:</span>{" "}
+            {q.lines.map((line, idx) => (
+              <div key={idx} className="mb-1">
+                <span className="font-semibold">{line.speaker_name}:</span>{" "}
+                {q.redacted ? (
+                  <span className="text-red-600 font-bold">[REDACTED]</span>
+                ) : (
                   <span>{line.text}</span>
-                </div>
-              ))
-            )}
+                )}
+              </div>
+            ))}
 
             <p className="text-sm mt-2 text-gray-500">
-              {q.date ? new Date(q.date).toLocaleDateString() : "Unknown Date"}
+              {q.date ? new Date(q.date).toLocaleDateString() : "Unknown"}
             </p>
 
             <div className="mt-2 flex flex-wrap gap-2">
