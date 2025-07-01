@@ -12,6 +12,14 @@ from rest_framework.response import Response
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from .serializers import UserSerializer
+from rest_framework.decorators import api_view, permission_classes
+from django.shortcuts import get_object_or_404
+
+
+class IsApprovedUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.is_active
+
 
 @api_view(["GET"])
 def test_auth(request):
@@ -24,16 +32,62 @@ def test_auth(request):
 def get_csrf(request):
     return JsonResponse({'csrfToken': request.META.get('CSRF_COOKIE', '')})
 
+
+@api_view(['GET'])
+@permission_classes([IsApprovedUser])
+def pending_signatures(request):
+    user = request.user
+    all_quotes = Quote.objects.filter(participants=user)
+
+    signed = Signature.objects.filter(user=user).values_list('quote_id', flat=True)
+    pending = all_quotes.exclude(id__in=signed)
+
+    serializer = QuoteSerializer(pending, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsApprovedUser])
+def refuse_signature(request):
+    user = request.user
+    quote_id = request.data.get('quote_id')
+
+    if not quote_id:
+        return Response({'error': 'Quote ID is required'}, status=400)
+
+    quote = get_object_or_404(Quote, id=quote_id)
+
+    # Check user is a participant
+    if user not in quote.participants.all():
+        return Response({'error': 'User is not a participant for this quote'}, status=403)
+
+    # Check if already signed/refused
+    if Signature.objects.filter(quote=quote, user=user).exists():
+        return Response({'error': 'Signature already exists'}, status=400)
+
+    # Save refusal
+    Signature.objects.create(quote=quote, user=user, refused=True)
+    return Response({'success': 'Refusal recorded'})
+
+
+@api_view(['GET'])
+@permission_classes([IsApprovedUser])
+def pending_signatures_count(request):
+    user = request.user
+    # Get quotes user is a participant in
+    quotes = Quote.objects.filter(participants=user)
+
+    # Remove quotes they've already signed
+    signed_quote_ids = Signature.objects.filter(user=user).values_list('quote_id', flat=True)
+    pending_quotes = quotes.exclude(id__in=signed_quote_ids)
+
+    return Response({'count': pending_quotes.count()})
+
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsApprovedUser]
 
     def post(self, request):
         logout(request)
         return Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
-
-class IsApprovedUser(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_active
 
 class QuoteViewSet(viewsets.ModelViewSet):
     queryset = Quote.objects.all()
@@ -57,7 +111,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsApprovedUser]
 
 
 class SignatureViewSet(viewsets.ModelViewSet):

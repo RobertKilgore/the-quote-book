@@ -25,6 +25,9 @@ def set_csrf_cookie(request):
     return JsonResponse({"detail": "CSRF cookie set"})
 
 urlpatterns = [
+    path('api/signatures/refuse/', views.refuse_signature),
+    path('api/signatures/pending/', views.pending_signatures),
+    path('api/signatures/pending/count/', views.pending_signatures_count),
     path('auth/logout/', LogoutView.as_view(), name='rest_logout'),
     path("api/test-auth/", views.test_auth),
     path('admin/', admin.site.urls),

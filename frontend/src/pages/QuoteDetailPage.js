@@ -1,7 +1,7 @@
-// src/pages/QuoteDetailPage.js
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { FiGlobe, FiLock } from "react-icons/fi";
 
 function QuoteDetailPage({ user }) {
   const { id } = useParams();
@@ -43,67 +43,77 @@ function QuoteDetailPage({ user }) {
   const displayTime = quote.time || "Unknown";
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
+    <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
+      {/* Visibility icon */}
+      <div className="absolute top-12 right-4">
+        <div className="bg-white shadow-md ring-1 ring-gray-200 rounded-full p-2">
+          {quote.visible ? (
+            <FiGlobe className="text-blue-500 text-xl" />
+          ) : (
+            <FiLock className="text-yellow-500 text-xl" />
+          )}
+        </div>
+      </div>
+
       <h2 className="text-2xl font-bold text-center mb-2">Quote Details</h2>
 
       <div className="text-center text-sm text-gray-600">
         <p><strong>Date:</strong> {displayDate} &nbsp;&nbsp; <strong>Time:</strong> {displayTime}</p>
       </div>
 
-      <div className="space-y-4 mt-6">
+      <div className="space-y-2 mt-6">
         {quote.lines.map((line, idx) => (
-          <div key={idx} className="border-l-4 pl-4 border-blue-400">
-            <p className="font-semibold">{line.speaker_name}</p>
+          <div key={idx} className="pl-4 border-l-4 border-blue-400">
             {quote.redacted ? (
-              <p className="text-red-600 font-bold">REDACTED</p>
+              <p className="text-red-600 font-bold">{line.speaker_name}: [REDACTED]</p>
             ) : (
-              <p>"{line.text}"</p>
+              <p>
+                <span className="font-semibold">{line.speaker_name}</span>: {line.text}
+              </p>
             )}
           </div>
         ))}
       </div>
 
-      {quote.signatures.length > 0 && (
-        <div className="pt-4">
-          <h3 className="font-semibold">Signatures:</h3>
-          <ul className="list-disc list-inside">
-            {quote.signatures.map((sig, idx) => (
-              <li key={idx}>
-                {sig.name}
-                {sig.signature_image && (
-                  <div className="mt-1">
-                    <img
-                      src={sig.signature_image}
-                      alt={`Signature of ${sig.name}`}
-                      className="h-16"
-                    />
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Signatures Section */}
+      <div className="flex flex-wrap gap-3 mt-6">
+        {quote.participants_signatures?.map((sig, idx) => (
+          <div
+            key={idx}
+            className="border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50"
+          >
+            <span className="font-semibold">{sig.name}</span>
+            {sig.refused ? (
+              <span className="text-red-600 font-medium mt-1">Refusal to sign</span>
+            ) : sig.image ? (
+              <img src={sig.image} alt="signature" className="h-12 mt-1" />
+            ) : (
+              <span className="text-gray-400 italic mt-1">No signature yet</span>
+            )}
+          </div>
+        ))}
+      </div>
 
-
+      {/* Metadata */}
       <div className="pt-6 border-t mt-6 text-sm text-gray-700 space-y-1">
-        <p><strong>Redacted:</strong> {quote.redacted ? "Yes" : "No"}</p>
-        <p><strong>Public:</strong> {quote.visible ? "Yes" : "No"}</p>
+        {/* <p><strong>Redacted:</strong> {quote.redacted ? "Yes" : "No"}</p> */}
         <p><strong>Approved:</strong> {quote.approved ? "Yes" : "No"}</p>
         <p><strong>Created by:</strong> {quote.created_by?.username}</p>
         <p><strong>Created at:</strong> {new Date(quote.created_at).toLocaleString()}</p>
       </div>
+
+      {/* Admin Buttons */}
       {user?.isSuperuser && (
-        <div className="flex gap-4 pt-4">
+        <div className="flex gap-3 pt-6">
           <button
             onClick={() => navigate(`/edit-quote/${quote.id}`)}
-            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+            className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition"
           >
             Edit
           </button>
           <button
             onClick={handleDelete}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
           >
             Delete
           </button>

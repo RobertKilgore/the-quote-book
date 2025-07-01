@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FaPenFancy } from "react-icons/fa";
 import axios from 'axios';
 
 function getCookie(name) {
@@ -17,7 +18,7 @@ function getCookie(name) {
   return cookieValue;
 }
 
-function Navbar({ user, setUser }) {
+function Navbar({ user, setUser, pendingSignatureCount }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
@@ -40,6 +41,7 @@ function Navbar({ user, setUser }) {
     }
   };
 
+
   const isAdmin = user?.isSuperuser;
 
   return (
@@ -56,6 +58,14 @@ function Navbar({ user, setUser }) {
               )}
             </div>
             <div className="space-x-4">
+              <Link to="/signatures/pending" className="relative inline-block mr-3 top-2">
+                <FaPenFancy size={20} title="Signatures Needed" />
+                {pendingSignatureCount > 0 && (
+                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+                    {pendingSignatureCount}
+                  </span>
+                )}
+              </Link>
               {user ? (
                 <>
                   <span>

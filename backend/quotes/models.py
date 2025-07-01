@@ -26,8 +26,10 @@ class QuoteLine(models.Model):
 class Signature(models.Model):
     quote = models.ForeignKey(Quote, on_delete=models.CASCADE, related_name='signatures')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    signature_image = models.ImageField(upload_to='signatures/')
+    signature_image = models.ImageField(upload_to='signatures/', null=True, blank=True)
+    refused = models.BooleanField(default=False)  # ✅ NEW
     signed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} signed on {self.signed_at}"
+        return f"{self.user.username} {'refused' if self.refused else 'signed'} on {self.signed_at}"
+

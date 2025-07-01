@@ -1,7 +1,7 @@
-// src/pages/HomePage.js
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import { FiGlobe, FiLock } from "react-icons/fi";
 
 export default function HomePage({ user }) {
   const [quotes, setQuotes] = useState([]);
@@ -29,8 +29,22 @@ export default function HomePage({ user }) {
           <div
             key={q.id}
             onClick={() => navigate(`/quote/${q.id}`)}
-            className="bg-white p-4 shadow rounded cursor-pointer hover:bg-gray-50 transition"
+            className="relative bg-white p-4 pr-12 shadow rounded cursor-pointer hover:bg-gray-50 transition"
           >
+            {/* Admin-only visibility icon */}
+            {user?.isSuperuser && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <div className="bg-white shadow-md ring-1 ring-gray-200 rounded-full p-2">
+                  {q.visible ? (
+                    <FiGlobe className="text-blue-500 text-lg" />
+                  ) : (
+                    <FiLock className="text-yellow-500 text-lg" />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Quote lines */}
             {q.lines.map((line, idx) => (
               <div key={idx} className="mb-1">
                 <span className="font-semibold">{line.speaker_name}:</span>{" "}
@@ -42,25 +56,39 @@ export default function HomePage({ user }) {
               </div>
             ))}
 
+            {/* Date */}
             <p className="text-sm mt-2 text-gray-500">
               {q.date ? new Date(q.date).toLocaleDateString() : "Unknown"}
             </p>
 
+            {/* Signatures */}
             <div className="mt-2 flex flex-wrap gap-2">
-              {q.signatures && q.signatures.length > 0 ? (
-                q.signatures.map((sig, idx) => (
+              {q.participants_signatures && q.participants_signatures.length > 0 ? (
+                q.participants_signatures.map((sig, idx) => (
                   <div
                     key={idx}
-                    className="bg-gray-100 border border-gray-300 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                    className="bg-gray-100 border border-gray-300 px-3 py-1 rounded-lg text-sm text-gray-800 flex items-center gap-2"
                   >
-                    ✒️ {sig.name}
+                    <span className="font-semibold">{sig.name}</span>
+                    {sig.refused ? (
+                      <span className="text-red-600 font-semibold">Refusal to sign</span>
+                    ) : sig.signature_image ? (
+                      <img
+                        src={sig.signature_image}
+                        alt="signature"
+                        className="h-6 max-w-[120px] object-contain"
+                      />
+                    ) : (
+                      <span className="italic text-gray-400">No signature yet</span>
+                    )}
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-gray-400 italic">No signatures yet</div>
+                <div className="text-sm text-gray-400 italic">No signatures needed</div>
               )}
             </div>
           </div>
+
         ))
       )}
     </div>
