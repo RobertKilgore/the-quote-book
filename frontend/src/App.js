@@ -7,13 +7,17 @@ import QuoteDetailPage from "./pages/QuoteDetailPage";
 import RequestAccountPage from "./pages/RequestAccountPage";
 import CreateQuotePage from "./pages/CreateQuotePage";
 import Navbar from "./components/Navbar";
-import RequireAdminRoute from "./components/RequireAdminRoute";
+import AdminRoute from "./components/AdminRoute";
 import Layout from "./components/Layout";
 import axios from "axios";
-//
+import PrivateRoute from "./components/PrivateRoute";
+
+
 function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/test-auth/', { withCredentials: true })
       .then(res => {
@@ -22,27 +26,48 @@ function App() {
         isSuperuser: res.data.is_superuser
         });
       })
-      .catch(() => setUser(null));
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <Router>
       <Navbar user={user} setUser={setUser} />
-      <div className="p-4">
+      <div className="pt-16 p-4">
         <Routes>
+
+          <Route path="/login" element={<LoginPage user={user} setUser={setUser} />} />
+          <Route path="/request-account" element={<RequestAccountPage />} />
+
+          
+          <Route
+            path="/"
+            element={
+              <PrivateRoute user={user} loading={loading}>
+                <HomePage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/quote/:id"
+            element={
+              <PrivateRoute user={user} loading={loading}>
+                <QuoteDetailPage />
+              </PrivateRoute>
+            }
+          />
 
           <Route
             path="/create-quote"
             element={
-              <RequireAdminRoute user={user}>
+              <AdminRoute user={user} loading={loading}>
                 <CreateQuotePage />
-              </RequireAdminRoute>
+              </AdminRoute>
             }
           />
-          <Route path="/login" element={<LoginPage />} />          
-          <Route path="/" element={<HomePage />} /> 
-          <Route path="/quote/:id" element={<QuoteDetailPage />} />
-          <Route path="/request-account" element={<RequestAccountPage />} />
+
+          
         </Routes>
       </div>
     </Router>

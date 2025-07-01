@@ -1,7 +1,8 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 
-function RequireAdminRoute({ user, children }) {
+function AdminRoute({ user, loading, children }) {
+  if (loading) return null;
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -13,4 +14,4 @@ function RequireAdminRoute({ user, children }) {
   return children;
 }
 
-export default RequireAdminRoute;
+export default AdminRoute;

@@ -3,15 +3,16 @@ from django.contrib.auth.models import User
 
 class Quote(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quotes_created')
-    participants = models.ManyToManyField(User, related_name='quotes_participating')
+    participants = models.ManyToManyField(User, related_name='quotes_participating', blank=True)
+    date = models.DateField(null=True, blank=True)
+    time = models.TimeField(null=True, blank=True)
+    visible = models.BooleanField(default=False)  # renamed from is_public
+    redacted = models.BooleanField(default=False)
+    approved = models.BooleanField(default=False)  # ✅ new
     created_at = models.DateTimeField(auto_now_add=True)
-    date = models.DateField()
-    is_public = models.BooleanField(default=False)           # new
-    is_redacted = models.BooleanField(default=False)         # new
 
     def __str__(self):
-        return f"Quote #{self.id} on {self.date}"
-
+        return f"Quote #{self.id} on {self.date} at {self.time}"
 
 class QuoteLine(models.Model):
     quote = models.ForeignKey(Quote, on_delete=models.CASCADE, related_name='lines')

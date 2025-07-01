@@ -10,6 +10,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
+from .serializers import UserSerializer
 
 @api_view(["GET"])
 def test_auth(request):
@@ -45,11 +47,18 @@ class QuoteViewSet(viewsets.ModelViewSet):
         return Quote.objects.filter(is_public=True)
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save()
     
     def list(self, request, *args, **kwargs):
         print("📌 Logged in user:", request.user)
         return super().list(request, *args, **kwargs)
+
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
 
 class SignatureViewSet(viewsets.ModelViewSet):
     queryset = Signature.objects.all()

@@ -44,7 +44,7 @@ function Navbar({ user, setUser }) {
 
   return (
     <div>
-      <nav className="bg-gray-800 text-white px-4 py-3 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white px-4 py-3 shadow flex items-center justify-between">
         {isLoginPage ? (
           <div className="mx-auto text-lg font-semibold">The Quote Book</div>
         ) : (
@@ -54,7 +54,6 @@ function Navbar({ user, setUser }) {
               {isAdmin && (
                 <Link to="/create-quote" className="hover:underline">Create Quote</Link>
               )}
-              <Link to="/request-account" className="hover:underline">Request Account</Link>
             </div>
             <div className="space-x-4">
               {user ? (
