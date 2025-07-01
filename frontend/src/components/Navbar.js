@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-
 
 function getCookie(name) {
   let cookieValue = null;
@@ -18,23 +17,22 @@ function getCookie(name) {
   return cookieValue;
 }
 
-
-
 function Navbar({ user, setUser }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
   const [logoutError, setLogoutError] = useState("");
 
   const handleLogout = async () => {
     try {
-      // throw new Error("Force logout fail"); // Test failure
       await axios.post('http://127.0.0.1:8000/auth/logout/', {}, {
         withCredentials: true,
         headers: {
-          'X-CSRFToken': getCookie('csrftoken'), // use your own getCookie function
+          'X-CSRFToken': getCookie('csrftoken'),
         },
       });
       setUser(null);
-      setLogoutError(""); // Clear error on success
+      setLogoutError("");
       navigate("/login");
     } catch (err) {
       console.error("Logout failed:", err);
@@ -42,32 +40,43 @@ function Navbar({ user, setUser }) {
     }
   };
 
+  const isAdmin = user?.isSuperuser;
+
   return (
     <div>
-      <nav className="bg-gray-800 text-white px-4 py-3 flex justify-between items-center">
-        <div className="space-x-4">
-          <Link to="/" className="hover:underline">Home</Link>
-          <Link to="/create-quote" className="hover:underline">Create Quote</Link>
-          <Link to="/request-account" className="hover:underline">Request Account</Link>
-        </div>
-        <div className="space-x-4">
-          {user ? (
-            <>
-              <span>Logged in as <strong>{user}</strong></span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <Link to="/login" className="hover:underline">Login</Link>
-          )}
-        </div>
+      <nav className="bg-gray-800 text-white px-4 py-3 flex items-center justify-between">
+        {isLoginPage ? (
+          <div className="mx-auto text-lg font-semibold">The Quote Book</div>
+        ) : (
+          <>
+            <div className="flex items-center space-x-4">
+              <Link to="/" className="text-lg font-semibold hover:underline">The Quote Book</Link>
+              {isAdmin && (
+                <Link to="/create-quote" className="hover:underline">Create Quote</Link>
+              )}
+              <Link to="/request-account" className="hover:underline">Request Account</Link>
+            </div>
+            <div className="space-x-4">
+              {user ? (
+                <>
+                  <span>
+                    Logged in as <strong>{user.username}</strong>{isAdmin && <span title="Admin"> 🛡️</span>}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="hover:underline">Login</Link>
+              )}
+            </div>
+          </>
+        )}
       </nav>
 
-      {/* ✅ Make sure this is inside your main return */}
       {logoutError && (
         <div className="bg-red-100 text-red-700 px-4 py-2 text-sm text-center">
           {logoutError}

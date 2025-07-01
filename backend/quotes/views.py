@@ -16,6 +16,7 @@ def test_auth(request):
     return Response({
         "user": str(request.user),
         "is_authenticated": request.user.is_authenticated,
+        "is_superuser": request.user.is_superuser,
     })
 
 def get_csrf(request):

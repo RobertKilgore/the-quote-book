@@ -7,6 +7,7 @@ import QuoteDetailPage from "./pages/QuoteDetailPage";
 import RequestAccountPage from "./pages/RequestAccountPage";
 import CreateQuotePage from "./pages/CreateQuotePage";
 import Navbar from "./components/Navbar";
+import RequireAdminRoute from "./components/RequireAdminRoute";
 import Layout from "./components/Layout";
 import axios from "axios";
 //
@@ -15,7 +16,12 @@ function App() {
 
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/test-auth/', { withCredentials: true })
-      .then(res => setUser(res.data.user))
+      .then(res => {
+        setUser({
+        username: res.data.user,
+        isSuperuser: res.data.is_superuser
+        });
+      })
       .catch(() => setUser(null));
   }, []);
 
@@ -24,10 +30,18 @@ function App() {
       <Navbar user={user} setUser={setUser} />
       <div className="p-4">
         <Routes>
+
+          <Route
+            path="/create-quote"
+            element={
+              <RequireAdminRoute user={user}>
+                <CreateQuotePage />
+              </RequireAdminRoute>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />          
           <Route path="/" element={<HomePage />} /> 
           <Route path="/quote/:id" element={<QuoteDetailPage />} />
-          <Route path="/create-quote" element={<CreateQuotePage />} />
           <Route path="/request-account" element={<RequestAccountPage />} />
         </Routes>
       </div>
