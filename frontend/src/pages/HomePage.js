@@ -1,28 +1,31 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+// src/pages/HomePage.js
+import { useEffect, useState } from "react";
+import api from "../api/axios";
+import { Link } from "react-router-dom";
 
-function HomePage() {
+export default function HomePage() {
   const [quotes, setQuotes] = useState([]);
 
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/api/quotes/", { withCredentials: true })
+    api.get("/api/quotes/", { withCredentials: true })
       .then(res => setQuotes(res.data))
-      .catch(err => console.error("Failed to fetch quotes", err));
+      .catch(() => setQuotes([]));
   }, []);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Quotes</h1>
-      <div className="space-y-4">
-        {quotes.map((quote) => (
-          <div key={quote.id} className="p-4 border rounded shadow hover:shadow-md transition">
-            <p className="italic">"{quote.quote}"</p>
-            <p className="text-sm text-gray-600 mt-2">— {quote.name}</p>
+    <div className="max-w-4xl mx-auto mt-8 space-y-4">
+      <h2 className="text-2xl font-semibold mb-4">Public Quotes</h2>
+      {quotes.length === 0 ? (
+        <p>No quotes available.</p>
+      ) : (
+        quotes.map((q) => (
+          <div key={q.id} className="bg-white p-4 shadow rounded">
+            <blockquote className="italic">"{q.text}"</blockquote>
+            <p className="text-right text-sm mt-2">— {q.name}</p>
+            <Link to={`/quote/${q.id}`} className="text-blue-500 hover:underline text-sm">View Details</Link>
           </div>
-        ))}
-      </div>
+        ))
+      )}
     </div>
   );
 }
-
-export default HomePage;

@@ -21,7 +21,7 @@ function App() {
 
   return (
     <Router>
-      <Navbar />
+      <Navbar user={user} setUser={setUser} />
       <div className="p-4">
         <Routes>
           <Route path="/login" element={<LoginPage />} />          

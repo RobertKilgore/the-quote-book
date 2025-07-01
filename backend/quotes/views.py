@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from .models import Quote, QuoteLine, Signature
 from .serializers import QuoteSerializer, QuoteLineSerializer, SignatureSerializer
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +7,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.contrib.auth import logout
 
 @api_view(["GET"])
 def test_auth(request):
@@ -17,6 +20,13 @@ def test_auth(request):
 
 def get_csrf(request):
     return JsonResponse({'csrfToken': request.META.get('CSRF_COOKIE', '')})
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logout(request)
+        return Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
 
 class IsApprovedUser(permissions.BasePermission):
     def has_permission(self, request, view):

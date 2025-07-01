@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
+from dj_rest_auth.views import LogoutView
 from quotes import views
 from django.views.decorators.csrf import ensure_csrf_cookie
 
@@ -24,6 +25,7 @@ def set_csrf_cookie(request):
     return JsonResponse({"detail": "CSRF cookie set"})
 
 urlpatterns = [
+    path('auth/logout/', LogoutView.as_view(), name='rest_logout'),
     path("api/test-auth/", views.test_auth),
     path('admin/', admin.site.urls),
     path('api/', include('quotes.urls')),            # ← Add this
