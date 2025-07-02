@@ -15,6 +15,7 @@ from .serializers import UserSerializer
 from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
+from django.db.models import Q
 import base64
 
 
@@ -40,13 +41,27 @@ def get_csrf(request):
 @permission_classes([IsApprovedUser])
 def pending_signatures(request):
     user = request.user
-    all_quotes = Quote.objects.filter(participants=user)
+    all_quotes = Quote.objects.filter(participants=user, approved=True)
 
     signed = Signature.objects.filter(user=user).values_list('quote_id', flat=True)
     pending = all_quotes.exclude(id__in=signed)
 
     serializer = QuoteSerializer(pending, many=True)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsApprovedUser])
+def pending_signatures_count(request):
+    user = request.user
+    # Get quotes user is a participant in
+    quotes = Quote.objects.filter(participants=user, approved=True)
+
+    # Remove quotes they've already signed
+    signed_quote_ids = Signature.objects.filter(user=user).values_list('quote_id', flat=True)
+    pending_quotes = quotes.exclude(id__in=signed_quote_ids)
+
+    return Response({'count': pending_quotes.count()})
+
 
 @api_view(['POST'])
 @permission_classes([IsApprovedUser])
@@ -70,20 +85,6 @@ def refuse_signature(request):
     # Save refusal
     Signature.objects.create(quote=quote, user=user, refused=True)
     return Response({'success': 'Refusal recorded'})
-
-
-@api_view(['GET'])
-@permission_classes([IsApprovedUser])
-def pending_signatures_count(request):
-    user = request.user
-    # Get quotes user is a participant in
-    quotes = Quote.objects.filter(participants=user)
-
-    # Remove quotes they've already signed
-    signed_quote_ids = Signature.objects.filter(user=user).values_list('quote_id', flat=True)
-    pending_quotes = quotes.exclude(id__in=signed_quote_ids)
-
-    return Response({'count': pending_quotes.count()})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -135,11 +136,16 @@ class QuoteViewSet(viewsets.ModelViewSet):
     serializer_class = QuoteSerializer
     permission_classes = [IsApprovedUser]
 
+
     def get_queryset(self):
         user = self.request.user
         if user.is_superuser:
-            return Quote.objects.all()
-        return Quote.objects.filter(visible=True)
+            return Quote.objects.filter(approved=True)
+        return Quote.objects.filter(
+            approved=True
+        ).filter(
+            Q(visible=True) | Q(participants=user)
+        )
 
     def perform_create(self, serializer):
         serializer.save()

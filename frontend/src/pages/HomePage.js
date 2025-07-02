@@ -10,11 +10,12 @@ export default function HomePage({ user }) {
   useEffect(() => {
     api.get("/api/quotes/", { withCredentials: true })
       .then((res) => {
-        const isAdmin = user?.isSuperuser;
-        const visibleQuotes = isAdmin
-          ? res.data
-          : res.data.filter((q) => q.visible);
-        setQuotes(visibleQuotes);
+        // const isAdmin = user?.isSuperuser;
+        // const visibleQuotes = isAdmin
+        //   ? res.data
+        //   : res.data.filter((q) => q.visible);
+        // setQuotes(visibleQuotes);
+        setQuotes(res.data);
       })
       .catch(() => setQuotes([]));
   }, [user]);

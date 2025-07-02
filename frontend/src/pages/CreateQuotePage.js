@@ -24,7 +24,7 @@ function CreateQuotePage() {
   const [time, setTime] = useState("");
   const [visible, setVisible] = useState(true);
   const [redacted, setRedacted] = useState(false);
-  const [approved] = useState(true); // Optionally add checkbox if admins will control it
+  const [approved] = useState(false); // Optionally add checkbox if admins will control it
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
