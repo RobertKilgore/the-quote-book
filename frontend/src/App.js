@@ -10,6 +10,7 @@ import AdminRoute from "./components/AdminRoute";
 import PrivateRoute from "./components/PrivateRoute";
 import PendingSignatures from "./pages/PendingSignatures";
 import axios from "axios";
+import 'react-confirm-alert/src/react-confirm-alert.css';
 
 function App() {
   const [user, setUser] = useState(null);

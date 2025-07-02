@@ -15,3 +15,27 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.react-confirm-alert-button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.react-confirm-alert-button-group button.cancel-button {
+  background-color: #e2e8f0; /* Tailwind slate-200 */
+  color: #1a202c;            /* Tailwind gray-800 */
+}
+
+.react-confirm-alert-button-group button.delete-button {
+  background-color: #dc2626; /* Tailwind red-600 */
+  color: white;
+}
+
+.react-confirm-alert-button-group button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}

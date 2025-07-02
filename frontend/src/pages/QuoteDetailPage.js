@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import SignaturePad from "signature_pad";
 import { FiGlobe, FiLock } from "react-icons/fi";
+import { confirmAlert } from 'react-confirm-alert';
 
 function QuoteDetailPage({ user }) {
   const { id } = useParams();
@@ -101,15 +102,35 @@ function QuoteDetailPage({ user }) {
     signaturePad?.clear();
   };
 
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this quote?")) {
-      try {
-        await api.delete(`/api/quotes/${id}/`, { withCredentials: true });
-        navigate("/");
-      } catch {
-        alert("Failed to delete quote.");
-      }
-    }
+  const handleDelete = () => {
+    confirmAlert({
+      title: "Confirm Delete",
+      message: "Are you sure you want to delete this quote?",
+      buttons: [
+        {
+          label: "Cancel",
+          onClick: () => {},
+          className: "cancel-button", // default button
+        },
+        {
+          label: "Yes, Delete it",
+          onClick: async () => {
+            try {
+              await api.delete(`/api/quotes/${id}/`, {
+                withCredentials: true,
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+              });
+              navigate("/");
+            } catch {
+              alert("Failed to delete quote.");
+            }
+          },
+          className: "delete-button", // style this red
+        },
+      ],
+      closeOnEscape: true,
+      closeOnClickOutside: true,
+    });
   };
 
   if (error) {
