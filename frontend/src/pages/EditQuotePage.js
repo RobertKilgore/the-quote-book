@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
 
 function getCookie(name) {
@@ -17,23 +17,42 @@ function getCookie(name) {
   return cookieValue;
 }
 
-function CreateQuotePage() {
+function EditQuotePage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [lines, setLines] = useState([{ userId: "", speaker_name: "", text: "" }]);
+
+  const [lines, setLines] = useState([]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
   const [redacted, setRedacted] = useState(false);
-  const [approved, setApproved] = useState(true); 
+  const [approved, setApproved] = useState(false);
+  const [participants, setParticipants] = useState([]);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    api.get("/api/users/", { withCredentials: true })
-      .then(res => setUsers(res.data))
-      .catch(err => console.error("Failed to load users", err));
-  }, []);
+    api.get(`/api/quotes/${id}/`, { withCredentials: true }).then((res) => {
+      const quote = res.data;
+      setDate(quote.date || "");
+      setTime(quote.time || "");
+      setVisible(quote.visible);
+      setRedacted(quote.redacted);
+      setApproved(quote.approved);
+      setParticipants(quote.participants_detail.map(u => u.id));
+      setLines(quote.lines.map(line => ({
+        speaker_name: line.speaker_name,
+        text: line.text,
+        userId: line.user_id || "" 
+      })));
+      console.log(quote)
+    });
+
+    api.get("/api/users/", { withCredentials: true }).then((res) => {
+      setUsers(res.data);
+    });
+  }, [id]);
 
   const handleAddLine = () => {
     setLines([...lines, { userId: "", speaker_name: "", text: "" }]);
@@ -54,22 +73,22 @@ function CreateQuotePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    console.log(lines);
+
     const processedLines = lines.map(line => ({
       speaker_name: line.speaker_name,
       text: line.text,
-      user_id: line.userId || null  // ✅ Include user_id explicitly
+      user_id: line.userId || null
     }));
-    console.log(processedLines);
+
     const participantIds = lines.map(line => line.userId).filter(Boolean);
 
     try {
-      await api.post("/api/quotes/", {
+      await api.put(`/api/quotes/${id}/`, {
         date: date || null,
         time: time || null,
         visible,
         redacted,
-        approved, // default false
+        approved,
         lines: processedLines,
         participants: participantIds
       }, {
@@ -78,21 +97,21 @@ function CreateQuotePage() {
       });
 
       setSuccess(true);
-      setTimeout(() => navigate("/"), 1500);
+      setTimeout(() => navigate(`/quote/${id}`), 1500);
     } catch (err) {
       console.error(err);
-      setError("Failed to create quote. Please ensure required fields are filled.");
+      setError("Failed to update quote.");
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-center">Create a New Quote</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Edit Quote</h2>
 
       {error && <div className="text-red-600 mb-4">{error}</div>}
-      {success && <div className="text-green-600 mb-4">Quote created! Redirecting...</div>}
+      {success && <div className="text-green-600 mb-4">Quote updated! Redirecting...</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} autoComplete="off" className="space-y-6">
         <div className="space-y-4">
           {lines.map((line, idx) => (
             <div key={idx} className="flex flex-wrap items-end gap-4">
@@ -151,7 +170,7 @@ function CreateQuotePage() {
           ➕ Add Line
         </button>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 mt-4">
           <div className="flex-1 min-w-[150px]">
             <label className="block font-medium">Date</label>
             <input
@@ -182,6 +201,7 @@ function CreateQuotePage() {
             />
             <label htmlFor="visible-checkbox" className="text-sm">Public</label>
           </div>
+
           <div className="flex items-center space-x-2 mt-6">
             <input
               type="checkbox"
@@ -192,6 +212,7 @@ function CreateQuotePage() {
             />
             <label htmlFor="approved-checkbox" className="text-sm">Approved</label>
           </div>
+
           <div className="flex items-center space-x-2 mt-6">
             <input
               type="checkbox"
@@ -208,11 +229,11 @@ function CreateQuotePage() {
           type="submit"
           className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
         >
-          Submit Quote
+          Save Changes
         </button>
       </form>
     </div>
   );
 }
 
-export default CreateQuotePage;
+export default EditQuotePage;

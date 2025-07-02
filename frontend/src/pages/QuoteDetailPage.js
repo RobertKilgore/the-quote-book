@@ -283,7 +283,7 @@ function QuoteDetailPage({ user }) {
       {user?.isSuperuser && (
         <div className="flex gap-3 pt-6">
           <button
-            onClick={() => navigate(`/edit-quote/${quote.id}`)}
+            onClick={() => navigate(`/quote/${quote.id}/edit`)}
             className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition"
           >
             Edit

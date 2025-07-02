@@ -18,6 +18,7 @@ class QuoteLine(models.Model):
     quote = models.ForeignKey(Quote, on_delete=models.CASCADE, related_name='lines')
     speaker_name = models.CharField(max_length=255)
     text = models.TextField()
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"{self.speaker_name}: {self.text[:30]}..."
@@ -28,7 +29,7 @@ class Signature(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     signature_image = models.ImageField(upload_to='signatures/', null=True, blank=True)
     refused = models.BooleanField(default=False)  # ✅ NEW
-    signed_at = models.DateTimeField(auto_now_add=True)
+    signed_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username} {'refused' if self.refused else 'signed'} on {self.signed_at}"

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import React, { useEffect, useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
+import EditQuotePage from "./pages/EditQuotePage";
 import RequestQuotePage from "./pages/RequestQuotePage";
 import QuoteDetailPage from "./pages/QuoteDetailPage";
 import RequestAccountPage from "./pages/RequestAccountPage";
@@ -103,6 +104,15 @@ function AppRoutes({ user, loading, setUser, setPendingSignatureCount }) {
         element={
           <AdminRoute user={user} loading={loading}>
             <CreateQuotePage user={user} />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/quote/:id/edit"
+        element={
+          <AdminRoute user={user} loading={loading}>
+            <EditQuotePage user={user} />
           </AdminRoute>
         }
       />

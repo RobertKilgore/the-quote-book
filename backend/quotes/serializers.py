@@ -3,9 +3,16 @@ from .models import Quote, QuoteLine, Signature
 from django.contrib.auth.models import User
 
 class QuoteLineSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(required=False, allow_null=True)
+
     class Meta:
         model = QuoteLine
-        fields = ['id', 'speaker_name', 'text']
+        fields = ['id', 'speaker_name', 'text', 'user_id']
+
+    def get_user_id(self, obj):
+        # Assuming there's a matching Signature entry:
+        sig = obj.quote.signatures.filter(user__username=obj.speaker_name).first()
+        return sig.user.id if sig else None
 
 class SignatureSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
@@ -64,9 +71,31 @@ class QuoteSerializer(serializers.ModelSerializer):
         quote.participants.set(participants)
 
         for line_data in lines_data:
-            QuoteLine.objects.create(quote=quote, **line_data)
+            user_id = line_data.pop('user_id', None)
+            user = User.objects.get(id=user_id) if user_id else None
+            QuoteLine.objects.create(quote=quote, user=user, **line_data)
 
         return quote
+    
+    def update(self, instance, validated_data):
+        lines_data = validated_data.pop('lines', [])
+        participants = validated_data.pop('participants', [])
+
+        Signature.objects.filter(quote=instance).update(signature_image=None, refused=False, signed_at=None)
+        # Update quote fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update participants
+        instance.participants.set(participants)
+
+        # Delete old lines and recreate
+        instance.lines.all().delete()
+        for line_data in lines_data:
+            QuoteLine.objects.create(quote=instance, **line_data)
+
+        return instance
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
