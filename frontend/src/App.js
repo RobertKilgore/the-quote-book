@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import React, { useEffect, useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
+import RequestQuotePage from "./pages/RequestQuotePage";
 import QuoteDetailPage from "./pages/QuoteDetailPage";
 import RequestAccountPage from "./pages/RequestAccountPage";
 import CreateQuotePage from "./pages/CreateQuotePage";
@@ -87,6 +88,16 @@ function AppRoutes({ user, loading, setUser, setPendingSignatureCount }) {
           </PrivateRoute>
         }
       />
+
+      <Route
+        path="/request-quote"
+        element={
+          <PrivateRoute user={user} loading={loading}>
+            <RequestQuotePage />
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/create-quote"
         element={

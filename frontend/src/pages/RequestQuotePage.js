@@ -17,14 +17,11 @@ function getCookie(name) {
   return cookieValue;
 }
 
-function CreateQuotePage() {
+function RequestQuotePage() {
   const navigate = useNavigate();
   const [lines, setLines] = useState([{ userId: "", speaker_name: "", text: "" }]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [visible, setVisible] = useState(true);
-  const [redacted, setRedacted] = useState(false);
-  const [approved, setApproved] = useState(true); 
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -66,9 +63,9 @@ function CreateQuotePage() {
       await api.post("/api/quotes/", {
         date: date || null,
         time: time || null,
-        visible,
-        redacted,
-        approved, // default false
+        visible: false,
+        redacted: false,
+        approved: false,
         lines: processedLines,
         participants: participantIds
       }, {
@@ -80,18 +77,18 @@ function CreateQuotePage() {
       setTimeout(() => navigate("/"), 1500);
     } catch (err) {
       console.error(err);
-      setError("Failed to create quote. Please ensure required fields are filled.");
+      setError("Failed to submit request. Please ensure all required fields are filled.");
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-center">Create a New Quote</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Request a New Quote</h2>
 
       {error && <div className="text-red-600 mb-4">{error}</div>}
-      {success && <div className="text-green-600 mb-4">Quote created! Redirecting...</div>}
+      {success && <div className="text-green-600 mb-4">Quote request submitted! Redirecting...</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} autoComplete="off" className="space-y-6">
         <div className="space-y-4">
           {lines.map((line, idx) => (
             <div key={idx} className="flex flex-wrap items-end gap-4">
@@ -150,7 +147,7 @@ function CreateQuotePage() {
           ➕ Add Line
         </button>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 mt-4">
           <div className="flex-1 min-w-[150px]">
             <label className="block font-medium">Date</label>
             <input
@@ -170,48 +167,17 @@ function CreateQuotePage() {
               className="w-full border rounded px-2 py-1"
             />
           </div>
-
-          <div className="flex items-center space-x-2 mt-6">
-            <input
-              type="checkbox"
-              checked={visible}
-              onChange={(e) => setVisible(e.target.checked)}
-              id="visible-checkbox"
-              className="h-4 w-4"
-            />
-            <label htmlFor="visible-checkbox" className="text-sm">Public</label>
-          </div>
-          <div className="flex items-center space-x-2 mt-6">
-            <input
-              type="checkbox"
-              checked={approved}
-              onChange={(e) => setApproved(e.target.checked)}
-              id="approved-checkbox"
-              className="h-4 w-4"
-            />
-            <label htmlFor="approved-checkbox" className="text-sm">Approved</label>
-          </div>
-          <div className="flex items-center space-x-2 mt-6">
-            <input
-              type="checkbox"
-              checked={redacted}
-              onChange={(e) => setRedacted(e.target.checked)}
-              id="redacted-checkbox"
-              className="h-4 w-4"
-            />
-            <label htmlFor="redacted-checkbox" className="text-sm">Redacted</label>
-          </div>
         </div>
 
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
         >
-          Submit Quote
+          Submit Quote Request
         </button>
       </form>
     </div>
   );
 }
 
-export default CreateQuotePage;
+export default RequestQuotePage;

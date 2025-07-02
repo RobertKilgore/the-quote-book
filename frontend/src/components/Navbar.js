@@ -53,12 +53,12 @@ function Navbar({ user, setUser, pendingSignatureCount }) {
           <>
             <div className="flex items-center space-x-4">
               <Link to="/" className="text-lg font-semibold hover:underline">The Quote Book</Link>
-              {isAdmin && (
+              {/* {isAdmin && (
                 <Link to="/create-quote" className="hover:underline">Create Quote</Link>
-              )}
+              )} */}
             </div>
             <div className="space-x-4">
-              <Link to="/signatures/pending" className="relative inline-block mr-3 top-2">
+              <Link to="/signatures/pending" className="relative inline-block mr-3 top-1.5">
                 <FaPenFancy size={20} title="Signatures Needed" />
                 {pendingSignatureCount > 0 && (
                   <span className="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold px-1 py-0 rounded-full">
