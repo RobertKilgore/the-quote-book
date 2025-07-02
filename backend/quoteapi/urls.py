@@ -20,6 +20,8 @@ from django.http import JsonResponse
 from dj_rest_auth.views import LogoutView
 from quotes import views
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.conf import settings
+from django.conf.urls.static import static
 
 def set_csrf_cookie(request):
     return JsonResponse({"detail": "CSRF cookie set"})
@@ -39,3 +41,6 @@ urlpatterns = [
      # Optional root route
     path('', lambda request: JsonResponse({"message": "Welcome to The Quote Book API"})),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

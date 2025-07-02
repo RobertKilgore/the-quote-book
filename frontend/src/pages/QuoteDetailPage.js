@@ -64,6 +64,7 @@ function QuoteDetailPage({ user }) {
     }
 
     const dataUrl = signaturePad.toDataURL("image/png");
+    console.log(dataUrl)
     const payload = {
       quote_id: quote.id,
       signature_image: dataUrl,

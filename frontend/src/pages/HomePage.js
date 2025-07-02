@@ -72,7 +72,7 @@ export default function HomePage({ user }) {
                     <span className="font-semibold">{p.name}</span>
                     {p.refused ? (
                       <span className="text-red-600 font-semibold">Refusal to sign</span>
-                    ) : p.signature_image ? (
+                    ) : p.signature_image ? (console.log(p),
                       <img
                         src={p.signature_image}
                         alt="signature"
