@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
 
 class Quote(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quotes_created')
@@ -34,3 +37,7 @@ class Signature(models.Model):
     def __str__(self):
         return f"{self.user.username} {'refused' if self.refused else 'signed'} on {self.signed_at}"
 
+@receiver(pre_delete, sender=Signature)
+def delete_signature_file(sender, instance, **kwargs):
+    if instance.signature_image:
+        instance.signature_image.delete(save=False)

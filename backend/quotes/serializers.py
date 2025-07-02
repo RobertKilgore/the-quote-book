@@ -81,7 +81,7 @@ class QuoteSerializer(serializers.ModelSerializer):
         lines_data = validated_data.pop('lines', [])
         participants = validated_data.pop('participants', [])
 
-        Signature.objects.filter(quote=instance).update(signature_image=None, refused=False, signed_at=None)
+        Signature.objects.filter(quote=instance).delete()
         # Update quote fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

@@ -49,6 +49,7 @@ function LoginPage({ user, setUser }) {
       setUser({
         username: res.data.user,
         isSuperuser: res.data.is_superuser,
+        id: res.data.id
       });
 
       navigate("/");

@@ -14,12 +14,15 @@ function QuoteDetailPage({ user }) {
   const canvasRef = useRef(null);
   const [signaturePad, setSignaturePad] = useState(null);
 
-
-  useEffect(() => {
+  
+useEffect(() => {
+  if (user && id) {
+    setQuote(null);  // optional: reset quote to avoid stale data flash
     api.get(`/api/quotes/${id}/`, { withCredentials: true })
       .then(res => setQuote(res.data))
       .catch(() => setError("This quote is either private or could not be found."));
-  }, [id]);
+  }
+}, [id, user]);
 
   useEffect(() => {
     if (!user || !quote) return;
@@ -145,7 +148,7 @@ function QuoteDetailPage({ user }) {
     );
   }
 
-  if (!quote) return <p>Loading...</p>;
+  if (!quote||!user) return <p>Loading...</p>;
 
   const displayDate = quote.date ? new Date(quote.date).toLocaleDateString() : "Unknown";
   const displayTime = quote.time || "Unknown";
@@ -155,7 +158,7 @@ function QuoteDetailPage({ user }) {
     return !match || (!match.signature_image && !match.refused);
   });
 
-  const userIsParticipant = quote.participants.some(p => p.id === user?.id);
+const userIsParticipant = quote.participants.some(p => String(p.id) === String(user?.id));
   const userHasSignedOrRefused = quote.signatures.some(sig =>
     sig.user === user?.id && (sig.signature_image || sig.refused)
   );
@@ -174,6 +177,9 @@ function QuoteDetailPage({ user }) {
     );
 
 
+    console.log("Participants:", quote.participants);
+    console.log(user?.id)
+    console.log(user)
   return (
     <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
       <div className="absolute top-12 right-4">

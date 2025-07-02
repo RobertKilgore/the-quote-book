@@ -66,24 +66,33 @@ def pending_signatures_count(request):
 @api_view(['POST'])
 @permission_classes([IsApprovedUser])
 def refuse_signature(request):
-    user = request.user
     quote_id = request.data.get('quote_id')
+    sign_as_user_id = request.data.get('sign_as_user_id')
 
     if not quote_id:
         return Response({'error': 'Quote ID is required'}, status=400)
 
     quote = get_object_or_404(Quote, id=quote_id)
 
-    # Check user is a participant
-    if user not in quote.participants.all():
+    # Determine actual signer
+    if request.user.is_superuser and sign_as_user_id:
+        try:
+            signer = User.objects.get(id=sign_as_user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Selected user not found'}, status=404)
+    else:
+        signer = request.user
+
+    # Check signer is a participant
+    if signer not in quote.participants.all():
         return Response({'error': 'User is not a participant for this quote'}, status=403)
 
     # Check if already signed/refused
-    if Signature.objects.filter(quote=quote, user=user).exists():
+    if Signature.objects.filter(quote=quote, user=signer).exists():
         return Response({'error': 'Signature already exists'}, status=400)
 
     # Save refusal
-    Signature.objects.create(quote=quote, user=user, refused=True)
+    Signature.objects.create(quote=quote, user=signer, refused=True)
     return Response({'success': 'Refusal recorded'})
 
 @api_view(['POST'])
@@ -145,7 +154,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
             approved=True
         ).filter(
             Q(visible=True) | Q(participants=user)
-        )
+        ).distinct()
 
     def perform_create(self, serializer):
         serializer.save()
@@ -153,6 +162,9 @@ class QuoteViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         print("📌 Logged in user:", request.user)
         return super().list(request, *args, **kwargs)
+    
+    def get_object(self):
+        return get_object_or_404(Quote, pk=self.kwargs["pk"])
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):

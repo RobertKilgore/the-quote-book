@@ -27,6 +27,7 @@ function App() {
           username: res.data.user,
           isSuperuser: res.data.is_superuser
         });
+        console.log(user)
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
