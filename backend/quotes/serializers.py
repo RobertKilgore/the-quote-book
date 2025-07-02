@@ -28,19 +28,23 @@ class UserSerializer(serializers.ModelSerializer):
 class QuoteSerializer(serializers.ModelSerializer):
     lines = QuoteLineSerializer(many=True)
     signatures = SignatureSerializer(many=True, read_only=True)
-    participants_signatures = serializers.SerializerMethodField()
+    participants = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), many=True, write_only=True
+    )
+    participants_detail = UserSerializer(source='participants', many=True, read_only=True)
+    participant_status = serializers.SerializerMethodField()
     created_by = UserSerializer(read_only=True)
 
     class Meta:
         model = Quote
         fields = [
-            'id', 'created_by', 'participants', 'created_at',
+            'id', 'created_by', 'participants', 'participants_detail', 'created_at',
             'date', 'time', 'visible', 'redacted', 'approved',
-            'lines', 'signatures', 'participants_signatures'
+            'lines', 'signatures', 'participant_status'
         ]
         read_only_fields = ['created_by', 'signatures', 'created_at']
 
-    def get_participants_signatures(self, obj):
+    def get_participant_status(self, obj):
         result = []
         for user in obj.participants.all():
             sig = obj.signatures.filter(user=user).first()
@@ -66,8 +70,13 @@ class QuoteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+
+        # Manually ensure participants are serialized if missing
+        data["participants"] = UserSerializer(instance.participants.all(), many=True).data
+
         if instance.redacted:
             for line in data.get('lines', []):
                 line['text'] = "REDACTED"
         return data
+
 

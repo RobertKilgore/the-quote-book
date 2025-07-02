@@ -61,20 +61,20 @@ export default function HomePage({ user }) {
               {q.date ? new Date(q.date).toLocaleDateString() : "Unknown"}
             </p>
 
-            {/* Signatures */}
+            {/* Signature display from participant_status */}
             <div className="mt-2 flex flex-wrap gap-2">
-              {q.participants_signatures && q.participants_signatures.length > 0 ? (
-                q.participants_signatures.map((sig, idx) => (
+              {q.participant_status?.length > 0 ? (
+                q.participant_status.map((p, idx) => (
                   <div
                     key={idx}
                     className="bg-gray-100 border border-gray-300 px-3 py-1 rounded-lg text-sm text-gray-800 flex items-center gap-2"
                   >
-                    <span className="font-semibold">{sig.name}</span>
-                    {sig.refused ? (
+                    <span className="font-semibold">{p.name}</span>
+                    {p.refused ? (
                       <span className="text-red-600 font-semibold">Refusal to sign</span>
-                    ) : sig.signature_image ? (
+                    ) : p.signature_image ? (
                       <img
-                        src={sig.signature_image}
+                        src={p.signature_image}
                         alt="signature"
                         className="h-6 max-w-[120px] object-contain"
                       />
@@ -88,7 +88,6 @@ export default function HomePage({ user }) {
               )}
             </div>
           </div>
-
         ))
       )}
     </div>

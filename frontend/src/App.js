@@ -20,6 +20,7 @@ function App() {
     axios.get('http://127.0.0.1:8000/api/test-auth/', { withCredentials: true })
       .then(res => {
         setUser({
+          id: res.data.id,
           username: res.data.user,
           isSuperuser: res.data.is_superuser
         });

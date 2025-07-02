@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import SignaturePad from "signature_pad";
 import { FiGlobe, FiLock } from "react-icons/fi";
 
 function QuoteDetailPage({ user }) {
@@ -8,12 +9,97 @@ function QuoteDetailPage({ user }) {
   const navigate = useNavigate();
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState(null);
+  const [signingAs, setSigningAs] = useState(null);
+  const canvasRef = useRef(null);
+  const [signaturePad, setSignaturePad] = useState(null);
+
 
   useEffect(() => {
     api.get(`/api/quotes/${id}/`, { withCredentials: true })
       .then(res => setQuote(res.data))
       .catch(() => setError("This quote is either private or could not be found."));
   }, [id]);
+
+  useEffect(() => {
+    if (!user || !quote) return;
+
+    if (user.isSuperuser) {
+      const eligible = quote.participants.filter(p => {
+        const match = quote.signatures.find(sig => sig.user === p.id);
+        return !match || (!match.signature_image && !match.refused);
+      });
+      if (eligible.length > 0) {
+        setSigningAs(eligible[0].id);
+      }
+    }
+  }, [user, quote]);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      const pad = new SignaturePad(canvasRef.current);
+      setSignaturePad(pad);
+    }
+  }, [quote]);
+
+  const getCookie = (name) => {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  };
+
+  const handleSignatureSubmit = async () => {
+    if (!signaturePad || signaturePad.isEmpty()) {
+      alert("Please provide a signature first.");
+      return;
+    }
+
+    const dataUrl = signaturePad.toDataURL("image/png");
+    const payload = {
+      quote_id: quote.id,
+      signature_image: dataUrl,
+      sign_as_user_id: user?.isSuperuser ? signingAs : user?.id,
+    };
+
+    try {
+      await api.post("/api/signatures/submit/", payload, {
+        withCredentials: true,
+        headers: { "X-CSRFToken": getCookie("csrftoken") },
+      });
+      window.location.reload();
+    } catch {
+      alert("Error submitting signature.");
+    }
+  };
+
+  const handleRefuseSignature = async () => {
+    const payload = {
+      quote_id: quote.id,
+      sign_as_user_id: user?.isSuperuser ? signingAs : user?.id,
+    };
+
+    try {
+      await api.post("/api/signatures/refuse/", payload, {
+        withCredentials: true,
+        headers: { "X-CSRFToken": getCookie("csrftoken") },
+      });
+      window.location.reload();
+    } catch {
+      alert("Error refusing to sign.");
+    }
+  };
+
+  const handleClear = () => {
+    signaturePad?.clear();
+  };
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this quote?")) {
@@ -42,9 +128,32 @@ function QuoteDetailPage({ user }) {
   const displayDate = quote.date ? new Date(quote.date).toLocaleDateString() : "Unknown";
   const displayTime = quote.time || "Unknown";
 
+  const eligibleSigners = quote.participants.filter(p => {
+    const match = quote.signatures.find(sig => sig.user === p.id);
+    return !match || (!match.signature_image && !match.refused);
+  });
+
+  const userIsParticipant = quote.participants.some(p => p.id === user?.id);
+  const userHasSignedOrRefused = quote.signatures.some(sig =>
+    sig.user === user?.id && (sig.signature_image || sig.refused)
+  );
+
+  const adminHasEligibleUsers = user?.isSuperuser && quote.participants.some(p => {
+    const sig = quote.signatures.find(s => s.user === p.id);
+    return !sig || (!sig.signature_image && !sig.refused);
+  });
+
+  const canSign =
+    user &&
+    quote.approved &&
+    (
+      (userIsParticipant && !userHasSignedOrRefused) ||
+      adminHasEligibleUsers
+    );
+
+
   return (
     <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
-      {/* Visibility icon */}
       <div className="absolute top-12 right-4">
         <div className="bg-white shadow-md ring-1 ring-gray-200 rounded-full p-2">
           {quote.visible ? (
@@ -67,42 +176,88 @@ function QuoteDetailPage({ user }) {
             {quote.redacted ? (
               <p className="text-red-600 font-bold">{line.speaker_name}: [REDACTED]</p>
             ) : (
-              <p>
-                <span className="font-semibold">{line.speaker_name}</span>: {line.text}
-              </p>
+              <p><span className="font-semibold">{line.speaker_name}</span>: {line.text}</p>
             )}
           </div>
         ))}
       </div>
 
-      {/* Signatures Section */}
       <div className="flex flex-wrap gap-3 mt-6">
-        {quote.participants_signatures?.map((sig, idx) => (
-          <div
-            key={idx}
-            className="border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50"
-          >
-            <span className="font-semibold">{sig.name}</span>
-            {sig.refused ? (
-              <span className="text-red-600 font-medium mt-1">Refusal to sign</span>
-            ) : sig.image ? (
-              <img src={sig.image} alt="signature" className="h-12 mt-1" />
-            ) : (
-              <span className="text-gray-400 italic mt-1">No signature yet</span>
-            )}
-          </div>
-        ))}
+        {quote.participants.map((p, idx) => {
+          const sig = quote.signatures.find(s => s.user === p.id);
+          return (
+            <div key={idx} className="border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50">
+              <span className="font-semibold">{p.username}</span>
+              {sig?.refused ? (
+                <span className="text-red-600 font-medium mt-1">Refusal to sign</span>
+              ) : sig?.signature_image ? (
+                <img src={sig.signature_image} alt="signature" className="h-12 mt-1" />
+              ) : (
+                <span className="text-gray-400 italic mt-1">No signature yet</span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Metadata */}
+      {canSign && (
+        <div className="mt-10 pt-6 border-t">
+          <h3 className="text-xl font-semibold mb-2">Sign this Quote</h3>
+          <p className="mb-4 text-gray-600">Please sign below or refuse to sign.</p>
+
+          {user?.isSuperuser && eligibleSigners.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sign as:</label>
+              <select
+                className="border rounded px-3 py-1 text-sm w-full"
+                value={signingAs}
+                onChange={e => setSigningAs(e.target.value)}
+              >
+                {eligibleSigners.map(p => (
+                  <option key={p.id} value={p.id}>{p.username}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="bg-gray-100 p-4 rounded shadow-inner mb-4">
+            <canvas
+              ref={canvasRef}
+              className="bg-white border rounded w-full h-40"
+              width={800}
+              height={160}
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={handleSignatureSubmit}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Submit Signature
+            </button>
+            <button
+              onClick={handleRefuseSignature}
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+            >
+              Refuse to Sign
+            </button>
+            <button
+              onClick={handleClear}
+              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="pt-6 border-t mt-6 text-sm text-gray-700 space-y-1">
-        {/* <p><strong>Redacted:</strong> {quote.redacted ? "Yes" : "No"}</p> */}
         <p><strong>Approved:</strong> {quote.approved ? "Yes" : "No"}</p>
         <p><strong>Created by:</strong> {quote.created_by?.username}</p>
         <p><strong>Created at:</strong> {new Date(quote.created_at).toLocaleString()}</p>
       </div>
 
-      {/* Admin Buttons */}
       {user?.isSuperuser && (
         <div className="flex gap-3 pt-6">
           <button

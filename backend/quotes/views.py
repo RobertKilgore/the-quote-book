@@ -14,6 +14,8 @@ from django.contrib.auth.models import User
 from .serializers import UserSerializer
 from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
+from django.core.files.base import ContentFile
+import base64
 
 
 class IsApprovedUser(permissions.BasePermission):
@@ -27,6 +29,7 @@ def test_auth(request):
         "user": str(request.user),
         "is_authenticated": request.user.is_authenticated,
         "is_superuser": request.user.is_superuser,
+        "id": request.user.id,
     })
 
 def get_csrf(request):
@@ -81,6 +84,44 @@ def pending_signatures_count(request):
     pending_quotes = quotes.exclude(id__in=signed_quote_ids)
 
     return Response({'count': pending_quotes.count()})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_signature(request):
+    try:
+        quote_id = request.data.get('quote_id')
+        user_id = request.data.get('sign_as_user_id')
+        image_data = request.data.get('signature_image')
+
+        if not quote_id or not user_id or not image_data:
+            return Response({"error": "Missing required fields"}, status=400)
+
+
+
+        quote = Quote.objects.get(id=quote_id)
+        signer = User.objects.get(id=user_id)
+
+        # decode and save image
+        format, imgstr = image_data.split(';base64,')
+        ext = format.split('/')[-1]
+        data = ContentFile(base64.b64decode(imgstr), name=f'sign_{signer.id}_{quote_id}.{ext}')
+
+        sig, _ = Signature.objects.get_or_create(quote=quote, user=signer)
+        sig.signature_image = data
+        sig.refused = False
+        sig.save()
+
+        return Response({"success": True}, status=200)
+
+    except Exception as e:
+        import traceback
+        traceback_str = traceback.format_exc()
+        return Response({"error": str(e), "trace": traceback_str}, status=400)
+
+
+
+
+
 
 class LogoutView(APIView):
     permission_classes = [IsApprovedUser]
