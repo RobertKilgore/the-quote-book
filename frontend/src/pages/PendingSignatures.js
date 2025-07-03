@@ -21,6 +21,7 @@ function getCookie(name) {
 export default function PendingSignaturesPage({ user, setPendingSignatureCount }) {
   const [quotes, setQuotes] = useState([]);
   const [refusedIds, setRefusedIds] = useState([]);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,8 +31,12 @@ export default function PendingSignaturesPage({ user, setPendingSignatureCount }
     })
       .then((res) => {
         setQuotes(res.data);
+        setError(null);
       })
-      .catch(() => setQuotes([]));
+      .catch(() => {
+        setError("Unable to fetch your pending signatures. Please try again.");
+        setQuotes([]);
+      });
   }, []);
 
   const handleRefuse = async (quoteId) => {
@@ -49,21 +54,29 @@ export default function PendingSignaturesPage({ user, setPendingSignatureCount }
 
       const res = await api.get("/api/signatures/pending/count/", { withCredentials: true });
       setPendingSignatureCount(res.data.count || 0);
-    } catch (err) {
-      alert("Error refusing to sign.");
+    } catch {
+      setError("Error refusing to sign. Please try again.");
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-4">
       <h2 className="text-2xl font-bold mb-4">Pending Signatures</h2>
-      {quotes.length === 0 ? (
-          <div className="flex justify-center items-center h-96">
-            <div className="text-center">
-              <h2 className="text-3xl font-semibold text-blue-600 mb-4">You're all caught up!</h2>
-              <p className="text-xl text-gray-700">No signatures needed right now.</p>
-            </div>
+
+      {error ? (
+        <div className="flex justify-center items-center h-96">
+          <div className="text-center">
+            <h2 className="text-3xl font-semibold text-blue-600 mb-4">Oops!</h2>
+            <p className="text-xl text-gray-700">{error}</p>
           </div>
+        </div>
+      ) : quotes.length === 0 ? (
+        <div className="flex justify-center items-center h-96">
+          <div className="text-center">
+            <h2 className="text-3xl font-semibold text-blue-600 mb-4">You're all caught up!</h2>
+            <p className="text-xl text-gray-700">No signatures needed right now.</p>
+          </div>
+        </div>
       ) : (
         quotes.map((q) => (
           <div
@@ -74,7 +87,6 @@ export default function PendingSignaturesPage({ user, setPendingSignatureCount }
                 : "hover:bg-gray-50"
             }`}
           >
-            {/* Visibility icon */}
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
               <div className="bg-white shadow-md rounded-full p-2">
                 {q.visible ? (
@@ -84,7 +96,6 @@ export default function PendingSignaturesPage({ user, setPendingSignatureCount }
                 )}
               </div>
             </div>
-
 
             {q.lines.map((line, idx) => (
               <div key={idx} className="mb-1">
@@ -126,7 +137,6 @@ export default function PendingSignaturesPage({ user, setPendingSignatureCount }
                 <div className="text-sm text-gray-400 italic">No signatures needed</div>
               )}
             </div>
-          
 
             <div className="mt-4 flex flex-wrap gap-3">
               <button
