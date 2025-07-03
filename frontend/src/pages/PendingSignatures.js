@@ -56,9 +56,14 @@ export default function PendingSignaturesPage({ user, setPendingSignatureCount }
 
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-4">
-      <h2 className="text-2xl font-semibold mb-4">Pending Signatures</h2>
+      <h2 className="text-2xl font-bold mb-4">Pending Signatures</h2>
       {quotes.length === 0 ? (
-        <p>No quotes waiting for your signature ✅</p>
+          <div className="flex justify-center items-center h-96">
+            <div className="text-center">
+              <h2 className="text-3xl font-semibold text-blue-600 mb-4">You're all caught up!</h2>
+              <p className="text-xl text-gray-700">No signatures needed right now.</p>
+            </div>
+          </div>
       ) : (
         quotes.map((q) => (
           <div

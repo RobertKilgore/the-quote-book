@@ -81,7 +81,6 @@ function CreateQuotePage() {
       setSuccess(true);
       setTimeout(() => navigate("/"), 1500);
     } catch (err) {
-      console.error(err);
       setError("Failed to create quote. Please ensure required fields are filled.");
     }
   };

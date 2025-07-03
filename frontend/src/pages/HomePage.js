@@ -26,7 +26,12 @@ export default function HomePage({ user }) {
       <div className="max-w-4xl mx-auto mt-8 space-y-4">
         <h2 className="text-2xl font-bold mb-4">Quotes</h2>
         {quotes.length === 0 ? (
-          <p>No quotes available.</p>
+          <div className="flex justify-center items-center h-96">
+            <div className="text-center">
+              <h2 className="text-3xl font-semibold text-blue-600 mb-4">All quiet here!</h2>
+              <p className="text-xl text-gray-700">No quotes yet, but the ink is ready!</p>
+            </div>
+          </div>
         ) : (
           quotes.map((q) => (
             <div
