@@ -21,7 +21,8 @@ function getCookie(name) {
 function Navbar({ user, setUser, pendingSignatureCount }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const isLoginPage = location.pathname === "/login";
+  const isLoginLikePage = location.pathname === "/login" || location.pathname === "/request-account"
+
   const [logoutError, setLogoutError] = useState("");
 
   const handleLogout = async () => {
@@ -47,7 +48,7 @@ function Navbar({ user, setUser, pendingSignatureCount }) {
   return (
     <div>
       <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white px-4 py-3 shadow flex items-center justify-between">
-        {isLoginPage ? (
+        {isLoginLikePage ? (
           <div className="mx-auto text-lg font-semibold">The Quote Book</div>
         ) : (
           <>
@@ -68,9 +69,11 @@ function Navbar({ user, setUser, pendingSignatureCount }) {
               </Link>
               {user ? (
                 <>
-                  <span>
+
+                  <span className="hidden md:inline-block truncate whitespace-nowrap max-w-[400px] align-middle relative -top-[1.5px]">
                     Logged in as <strong>{user.username}</strong>{isAdmin && <span title="Admin"> 🛡️</span>}
                   </span>
+
                   <button
                     onClick={handleLogout}
                     className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"

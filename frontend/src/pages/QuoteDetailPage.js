@@ -38,12 +38,53 @@ useEffect(() => {
     }
   }, [user, quote]);
 
-  useEffect(() => {
-    if (canvasRef.current) {
-      const pad = new SignaturePad(canvasRef.current);
-      setSignaturePad(pad);
-    }
-  }, [quote]);
+useEffect(() => {
+  if (!canvasRef.current) return;
+
+  const canvas = canvasRef.current;
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  const context = canvas.getContext("2d");
+
+  let pad = null;
+
+  const resizeCanvas = () => {
+    // Get the rendered width
+    const displayWidth = canvas.offsetWidth;
+    const displayHeight = displayWidth / 5;
+
+    // Set actual canvas resolution
+    canvas.width = displayWidth * ratio;
+    canvas.height = displayHeight * ratio;
+
+    // Normalize coordinate system
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.scale(ratio, ratio);
+
+    // Calculate dynamic stroke width
+    const baseWidth = 800;
+    const scaleFactor = displayWidth / baseWidth;
+    const minWidth = 0.5 * scaleFactor;
+    const maxWidth = 2.0 * scaleFactor;
+
+    // Reinitialize signature pad
+    pad = new SignaturePad(canvas, {
+      minWidth,
+      maxWidth,
+    });
+
+    pad.clear(); // clear on resize
+    setSignaturePad(pad);
+  };
+
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  return () => {
+    window.removeEventListener("resize", resizeCanvas);
+    if (pad) pad.off?.(); // clean up listeners if available
+  };
+}, [quote]);
+
 
   const getCookie = (name) => {
     let cookieValue = null;
@@ -251,7 +292,8 @@ const userIsParticipant = quote.participants.some(p => String(p.id) === String(u
           <div className="bg-gray-100 p-4 rounded shadow-inner mb-4">
             <canvas
               ref={canvasRef}
-              className="bg-white border rounded w-full h-40"
+              className="bg-white border rounded"
+              style={{ width: "100%", aspectRatio: "5 / 1" }}  // ✅ 800:160 = 5:1
               width={800}
               height={160}
             />

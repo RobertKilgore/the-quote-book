@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { FiX } from "react-icons/fi";
 
 function getCookie(name) {
   let cookieValue = null;
@@ -95,51 +96,56 @@ function CreateQuotePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           {lines.map((line, idx) => (
-            <div key={idx} className="flex flex-wrap items-end gap-4">
-              <div className="flex-1 min-w-[150px]">
-                <label className="block font-medium">User</label>
-                <select
-                  className="w-full border rounded px-2 py-1"
-                  value={line.userId}
-                  onChange={(e) => handleLineChange(idx, "userId", e.target.value)}
-                >
-                  <option value="">None</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>{user.username}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex-1 min-w-[150px]">
-                <label className="block font-medium">Speaker Name</label>
-                <input
-                  type="text"
-                  className="w-full border rounded px-2 py-1"
-                  value={line.speaker_name}
-                  onChange={(e) => handleLineChange(idx, "speaker_name", e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="flex-1 min-w-[200px]">
-                <label className="block font-medium">Quote</label>
-                <input
-                  type="text"
-                  className="w-full border rounded px-2 py-1"
-                  value={line.text}
-                  onChange={(e) => handleLineChange(idx, "text", e.target.value)}
-                  required
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleRemoveLine(idx)}
-                className="text-red-600 text-sm font-semibold"
-              >
-                ❌ Remove
-              </button>
-            </div>
+            <div key={idx} className="p-4 border border-gray-300 rounded-md bg-gray-50 space-y-2">
+                          <div className="flex flex-wrap items-end gap-4">
+                            <div className="flex-1 min-w-[150px] max-w-[180px]">
+                              <label className="block font-medium">User</label>
+                              <select
+                                className="w-full border rounded px-2 py-1"
+                                value={line.userId}
+                                onChange={(e) => handleLineChange(idx, "userId", e.target.value)}
+                              >
+                                <option value="">None</option>
+                                {users.map(user => (
+                                  <option key={user.id} value={user.id}>{user.username}</option>
+                                ))}
+                              </select>
+                            </div>
+            
+                            <div className="flex-1 min-w-[150px] max-w-[180px]">
+                              <label className="block font-medium">Speaker Name</label>
+                              <input
+                                type="text"
+                                className="w-full border rounded px-2 py-1"
+                                value={line.speaker_name}
+                                onChange={(e) => handleLineChange(idx, "speaker_name", e.target.value)}
+                                required
+                              />
+                            </div>
+            
+                            <div className="flex-[2] min-w-[250px]">
+                              <label className="block font-medium">Quote</label>
+                              <input
+                                type="text"
+                                className="w-full border rounded px-2 py-1"
+                                value={line.text}
+                                onChange={(e) => handleLineChange(idx, "text", e.target.value)}
+                                required
+                              />
+                            </div>
+            
+                            <div className="items-start">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLine(idx)}
+                                className="text-red-600 text-xl hover:text-red-800 transition"
+                                title="Remove Line"
+                              >
+                                <FiX />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
           ))}
         </div>
 
@@ -172,36 +178,41 @@ function CreateQuotePage() {
             />
           </div>
 
-          <div className="flex items-center space-x-2 mt-6">
-            <input
-              type="checkbox"
-              checked={visible}
-              onChange={(e) => setVisible(e.target.checked)}
-              id="visible-checkbox"
-              className="h-4 w-4"
-            />
-            <label htmlFor="visible-checkbox" className="text-sm">Public</label>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={visible}
+                onChange={(e) => setVisible(e.target.checked)}
+                id="visible-checkbox"
+                className="h-4 w-4"
+              />
+              <label htmlFor="visible-checkbox" className="text-sm">Public</label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={approved}
+                onChange={(e) => setApproved(e.target.checked)}
+                id="approved-checkbox"
+                className="h-4 w-4"
+              />
+              <label htmlFor="approved-checkbox" className="text-sm">Approved</label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={redacted}
+                onChange={(e) => setRedacted(e.target.checked)}
+                id="redacted-checkbox"
+                className="h-4 w-4"
+              />
+              <label htmlFor="redacted-checkbox" className="text-sm">Redacted</label>
+            </div>
           </div>
-          <div className="flex items-center space-x-2 mt-6">
-            <input
-              type="checkbox"
-              checked={approved}
-              onChange={(e) => setApproved(e.target.checked)}
-              id="approved-checkbox"
-              className="h-4 w-4"
-            />
-            <label htmlFor="approved-checkbox" className="text-sm">Approved</label>
-          </div>
-          <div className="flex items-center space-x-2 mt-6">
-            <input
-              type="checkbox"
-              checked={redacted}
-              onChange={(e) => setRedacted(e.target.checked)}
-              id="redacted-checkbox"
-              className="h-4 w-4"
-            />
-            <label htmlFor="redacted-checkbox" className="text-sm">Redacted</label>
-          </div>
+        
         </div>
 
         <button
