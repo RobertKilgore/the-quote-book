@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import api from "../api/axios";
 import ErrorBanner from "../components/ErrorBanner"; // ✅ make sure this path is correct
+import { FiPlus } from "react-icons/fi";
 
 function getCookie(name) {
   let cookieValue = null;
@@ -136,9 +137,10 @@ function RequestQuotePage() {
           <button
             type="button"
             onClick={handleAddLine}
-            className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+            className="flex items-center gap-2 text-gray-700 bg-gray-100 px-4 py-2 rounded hover:bg-gray-200 transition"
           >
-            ➕ Add Line
+            <FiPlus className="text-xl" />
+            <span className="font-medium">Add Line</span>
           </button>
 
           <div className="flex flex-wrap gap-4 mt-4">

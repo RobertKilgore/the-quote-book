@@ -183,8 +183,30 @@ class QuoteViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
     
     def get_object(self):
-        queryset = self.get_queryset()
-        return get_object_or_404(queryset, pk=self.kwargs["pk"])
+        pk = self.kwargs["pk"]
+        try:
+            quote = Quote.objects.get(pk=pk)
+        except Quote.DoesNotExist:
+            raise Http404("Quote not found")
+
+        user = self.request.user
+
+        # Allow if admin
+        if user.is_superuser:
+            return quote
+
+        # Only allow access to approved quotes if user is participant or visible
+        if quote.approved:
+            if quote.visible or user in quote.participants.all():
+                return quote
+            raise PermissionDenied("You do not have access to this quote.")
+
+        # Only allow access to unapproved quotes if user is a participant
+        if user in quote.participants.all():
+            return quote
+
+        raise PermissionDenied("You do not have access to this unapproved quote.")
+
     
     def retrieve(self, request, *args, **kwargs):
         user = request.user
