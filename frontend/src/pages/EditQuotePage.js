@@ -233,12 +233,22 @@ function EditQuotePage() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
-        >
-          Save Changes
-        </button>
+<div className="mt-6 flex items-center gap-4">
+  <button
+    type="submit"
+    className="flex-grow bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition h-[42px]"
+  >
+    Save Changes
+  </button>
+  <button
+    type="button"
+    onClick={() => navigate(`/quote/${id}`)}
+    className="bg-gray-300 text-black px-4 rounded hover:bg-gray-400 transition h-[42px]"
+  >
+    Cancel
+  </button>
+</div>
+
       </form>
     </div>
   );

@@ -11,6 +11,7 @@ import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
 import PrivateRoute from "./components/PrivateRoute";
 import PendingSignatures from "./pages/PendingSignatures";
+import UnapprovedQuotePage from "./pages/UnapprovedQuotePage";
 import axios from "axios";
 import 'react-confirm-alert/src/react-confirm-alert.css';
 
@@ -18,6 +19,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pendingSignatureCount, setPendingSignatureCount] = useState(0);
+  const [unapprovedCount, setUnapprovedCount] = useState(0);
 
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/test-auth/', { withCredentials: true })
@@ -27,7 +29,6 @@ function App() {
           username: res.data.user,
           isSuperuser: res.data.is_superuser
         });
-        console.log(user)
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -35,13 +36,14 @@ function App() {
 
   return (
     <Router>
-      <Navbar user={user} setUser={setUser} pendingSignatureCount={pendingSignatureCount} />
+      <Navbar user={user} setUser={setUser} pendingSignatureCount={pendingSignatureCount} unapprovedCount={unapprovedCount} />
       <div className="pt-16 p-4">
         <AppRoutes
           user={user}
           loading={loading}
           setUser={setUser}
           setPendingSignatureCount={setPendingSignatureCount}
+          setUnapprovedCount={setUnapprovedCount}
         />
       </div>
     </Router>
@@ -49,7 +51,7 @@ function App() {
 }
 
 // ✅ This is the child component where useLocation is allowed
-function AppRoutes({ user, loading, setUser, setPendingSignatureCount }) {
+function AppRoutes({ user, loading, setUser, setPendingSignatureCount, setUnapprovedCount }) {
   const location = useLocation();
 
   useEffect(() => {
@@ -57,6 +59,11 @@ function AppRoutes({ user, loading, setUser, setPendingSignatureCount }) {
       axios.get('http://127.0.0.1:8000/api/signatures/pending/count/', { withCredentials: true })
         .then(res => setPendingSignatureCount(res.data.count || 0))
         .catch(() => setPendingSignatureCount(0));
+      if (user.isSuperuser) {
+        axios.get('http://127.0.0.1:8000/api/quotes/unapproved/count/', { withCredentials: true })
+          .then(res => setUnapprovedCount(res.data.count || 0))
+          .catch(() => setUnapprovedCount(0));
+    }
     }
   }, [user, location.pathname]);
 
@@ -114,6 +121,15 @@ function AppRoutes({ user, loading, setUser, setPendingSignatureCount }) {
         element={
           <AdminRoute user={user} loading={loading}>
             <EditQuotePage user={user} />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/unapproved-quotes"
+        element={
+          <AdminRoute user={user} loading={loading}>
+            <UnapprovedQuotePage  user={user} />
           </AdminRoute>
         }
       />

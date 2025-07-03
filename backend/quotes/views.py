@@ -16,6 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
 from django.db.models import Q
+from rest_framework.exceptions import PermissionDenied
 import base64
 
 
@@ -36,6 +37,15 @@ def test_auth(request):
 def get_csrf(request):
     return JsonResponse({'csrfToken': request.META.get('CSRF_COOKIE', '')})
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def unapproved_quotes(request):
+    if not request.user.is_superuser:
+        return Response({'error': 'Forbidden'}, status=403)
+
+    quotes = Quote.objects.filter(approved=False)
+    serializer = QuoteSerializer(quotes, many=True)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([IsApprovedUser])
@@ -48,6 +58,15 @@ def pending_signatures(request):
 
     serializer = QuoteSerializer(pending, many=True)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def unapproved_quotes_count(request):
+    if not request.user.is_superuser:
+        return Response({'error': 'Forbidden'}, status=403)
+
+    count = Quote.objects.filter(approved=False).count()
+    return Response({'count': count})
 
 @api_view(['GET'])
 @permission_classes([IsApprovedUser])
@@ -164,7 +183,46 @@ class QuoteViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
     
     def get_object(self):
-        return get_object_or_404(Quote, pk=self.kwargs["pk"])
+        queryset = self.get_queryset()
+        return get_object_or_404(queryset, pk=self.kwargs["pk"])
+    
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+        pk = self.kwargs["pk"]
+
+        try:
+            quote = Quote.objects.get(pk=pk)
+        except Quote.DoesNotExist:
+            raise Http404("Quote not found")
+
+        # 🔒 Access control:
+        if not quote.approved:
+            # Only admins and participants can see unapproved quotes
+            if not user.is_superuser and user not in quote.participants.all():
+                raise PermissionDenied("You do not have access to this unapproved quote.")
+        else:
+            # For approved quotes, user must be admin, participant, or visibility = True
+            if not quote.visible and user not in quote.participants.all() and not user.is_superuser:
+                raise PermissionDenied("You do not have access to this quote.")
+
+        serializer = self.get_serializer(quote)
+        return Response(serializer.data)
+    
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        pk = self.kwargs["pk"]
+
+        try:
+            quote = Quote.objects.get(pk=pk)
+        except Quote.DoesNotExist:
+            raise Http404("Quote not found")
+
+        # Only admins can delete
+        if not user.is_superuser:
+            raise PermissionDenied("Only admins can delete quotes.")
+
+        quote.delete()
+        return Response(status=204)
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):

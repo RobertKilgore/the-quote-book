@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaPenFancy } from "react-icons/fa";
+import { MdOutlineGavel } from "react-icons/md";
 import axios from 'axios';
 
 function getCookie(name) {
@@ -18,11 +19,10 @@ function getCookie(name) {
   return cookieValue;
 }
 
-function Navbar({ user, setUser, pendingSignatureCount }) {
+function Navbar({ user, setUser, pendingSignatureCount, unapprovedCount }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isLoginLikePage = location.pathname === "/login" || location.pathname === "/request-account"
-
   const [logoutError, setLogoutError] = useState("");
 
   const handleLogout = async () => {
@@ -59,30 +59,55 @@ function Navbar({ user, setUser, pendingSignatureCount }) {
               )} */}
             </div>
             <div className="space-x-4">
-              <Link to="/signatures/pending" className="relative inline-block mr-3 top-1.5">
+              <Link
+                to="/signatures/pending"
+                className="relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-xl hover:shadow-lg hover:bg-gray-600 transition"
+              >
                 <FaPenFancy size={20} title="Signatures Needed" />
                 {pendingSignatureCount > 0 && (
-                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1 py-0 rounded-full">
                     {pendingSignatureCount}
                   </span>
                 )}
               </Link>
+
+
+
+              {isAdmin && (
+                <Link
+                  to="/unapproved-quotes"
+                  className="relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-lg hover:shadow-lg hover:bg-gray-600 transition"
+                >
+                  <MdOutlineGavel size={20} title="Unapproved Quotes" />
+                  {unapprovedCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+                      {unapprovedCount}
+                    </span>
+                  )}
+                </Link>
+              )}
+
               {user ? (
                 <>
 
-                  <span className="hidden md:inline-block truncate whitespace-nowrap max-w-[400px] align-middle relative -top-[1.5px]">
+                  <span className="hidden md:inline-block truncate whitespace-nowrap max-w-[400px] align-middle relative -top-[6px]">
                     Logged in as <strong>{user.username}</strong>{isAdmin && <span title="Admin"> 🛡️</span>}
                   </span>
 
                   <button
                     onClick={handleLogout}
-                    className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
+                    className="bg-red-500 px-3 py-1 rounded border border-red-700 shadow hover:bg-red-600 align-middle relative -top-[6px] "
                   >
                     Logout
                   </button>
                 </>
               ) : (
-                <Link to="/login" className="hover:underline">Login</Link>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-blue-500 px-3 py-1 rounded border border-blue-700 shadow hover:bg-blue-600"
+                  >
+                    Logout
+                  </button>
               )}
             </div>
           </>

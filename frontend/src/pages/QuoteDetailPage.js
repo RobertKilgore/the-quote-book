@@ -108,7 +108,6 @@ useEffect(() => {
     }
 
     const dataUrl = signaturePad.toDataURL("image/png");
-    console.log(dataUrl)
     const payload = {
       quote_id: quote.id,
       signature_image: dataUrl,
@@ -218,9 +217,6 @@ const userIsParticipant = quote.participants.some(p => String(p.id) === String(u
     );
 
 
-    console.log("Participants:", quote.participants);
-    console.log(user?.id)
-    console.log(user)
   return (
     <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
       <div className="absolute top-12 right-4">
