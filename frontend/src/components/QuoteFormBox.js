@@ -57,9 +57,24 @@ export default function QuoteFormBox({
   }, [isEdit, quoteId]);
 
   const handleLineChange = (idx, field, value) => {
-    const updated = [...lines];
-    updated[idx][field] = value;
-    setLines(updated);
+    setLines(prevLines => {
+      const updated = [...prevLines];
+      updated[idx] = { ...updated[idx], [field]: value };
+
+      // Autofill speaker_name if user is selected and name is still blank
+      if (
+        field === "userId" &&
+        !updated[idx].speaker_name &&     // name field is empty
+        value                             // a user is selected
+      ) {
+        const selectedUser = users.find(u => u.id.toString() === value.toString());
+        if (selectedUser) {
+          updated[idx].speaker_name = selectedUser.username;
+        }
+      }
+
+      return updated;
+    });
   };
 
   const handleAddLine = () => {
