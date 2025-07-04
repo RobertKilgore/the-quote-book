@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import ErrorBanner from "../components/ErrorBanner";
 import SuccessBanner from "../components/SuccessBanner";
 import QuoteFormBox from "../components/QuoteFormBox";
+import LoadingPage from "../pages/LoadingPage";
 
-export default function RequestQuotePage() {
+export default function RequestQuotePage({user, loading}) {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -17,7 +18,7 @@ export default function RequestQuotePage() {
   const handleError = (message) => {
     setError(message);
   };
-
+  if (loading) return <LoadingPage />;
   return (
     <>
       <ErrorBanner message={error} />

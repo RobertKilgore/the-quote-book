@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useSignature } from "../context/SignatureContext";
+import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import { FaPenFancy } from "react-icons/fa";
 import { MdOutlineGavel } from "react-icons/md";
 import axios from 'axios';
 import getCookie from "../utils/getCookie";
 
-function Navbar({ user, setUser, pendingSignatureCount, unapprovedCount }) {
+function Navbar({ user, setUser, loading }) {
+  const { unapprovedCount } = useUnapprovedQuotes();
+  const { pendingCount } = useSignature();
   const navigate = useNavigate();
   const location = useLocation();
   const isLoginLikePage = location.pathname === "/login" || location.pathname === "/request-account";
@@ -30,6 +34,7 @@ function Navbar({ user, setUser, pendingSignatureCount, unapprovedCount }) {
 
   const isAdmin = user?.isSuperuser;
 
+  if (loading) return null;
   return (
     <div className={isLoginLikePage ? "" : "max-w-4xl mx-auto"}>
       <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white px-4 py-1.5 shadow flex items-center justify-between">
@@ -69,9 +74,9 @@ function Navbar({ user, setUser, pendingSignatureCount, unapprovedCount }) {
                 className="relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-xl hover:shadow-lg hover:bg-gray-600 transition"
               >
                 <FaPenFancy size={20} title="Signatures Needed" />
-                {pendingSignatureCount > 0 && (
+                {pendingCount > 0 && (
                   <span className="absolute -top-0 -right-0 bg-red-500 text-white text-xs font-bold px-1 py-0 rounded-full">
-                    {pendingSignatureCount}
+                    {pendingCount}
                   </span>
                 )}
               </Link>

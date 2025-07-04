@@ -35,7 +35,7 @@ const RequestAccountPage = () => {
       setError("❌ Could not submit request. Please try again.");
     }
   };
-
+  
   return (
     <>
       <ErrorBanner message={error} /> {/* ✅ Error banner at top */}

@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ErrorBanner from "../components/ErrorBanner"; // ✅ Imported as requested
 import getCookie from "../utils/getCookie";
+import LoadingPage from "../pages/LoadingPage";
 
-function LoginPage({ user, setUser }) {
+function LoginPage({ user, setUser, loading }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -47,7 +48,7 @@ function LoginPage({ user, setUser }) {
       setError("❌ Invalid username or password");
     }
   };
-
+  if (loading) return <LoadingPage />;
   return (
     <>
       <ErrorBanner message={error} /> {/* ✅ Consistent banner placement */}

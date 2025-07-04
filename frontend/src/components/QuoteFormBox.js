@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiX, FiPlus } from "react-icons/fi";
 import api from "../api/axios";
-import getCookie from "../utils/getCookie"; // assumes you extracted getCookie to a reusable file
+import getCookie from "../utils/getCookie";
+import { useSignature } from "../context/SignatureContext";
+import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 
 export default function QuoteFormBox({
   title = "New Quote",
@@ -25,6 +27,8 @@ export default function QuoteFormBox({
   const [redacted, setRedacted] = useState(defaultRedacted);
   const [approved, setApproved] = useState(defaultApproved);
   const [users, setUsers] = useState([]);
+  const { refreshCount } = useSignature();
+  const { refreshUnapprovedCount } = useUnapprovedQuotes();
 
   useEffect(() => {
     api.get("/api/users/", { withCredentials: true })
@@ -100,7 +104,8 @@ export default function QuoteFormBox({
             withCredentials: true,
             headers: { "X-CSRFToken": getCookie("csrftoken") },
           });
-
+      refreshUnapprovedCount();
+      refreshCount();
       onSuccess(
         isEdit ? "Quote updated successfully!" : "Quote created!",
         response.data.id

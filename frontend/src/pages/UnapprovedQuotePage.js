@@ -3,9 +3,12 @@ import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import QuoteChip from "../components/QuoteChip";
 import EmptyState from "../components/EmptyState";
+import LoadingPage from "../pages/LoadingPage";
 
 
-export default function UnapprovedQuotesPage({ user }) {
+
+export default function UnapprovedQuotesPage({user}) {
+  const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -19,39 +22,35 @@ export default function UnapprovedQuotesPage({ user }) {
       .catch(err => {
         console.error("Failed to fetch unapproved quotes:", err);
         setError("Failed to load unapproved quotes. Please try again later.");
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
+  //if (loading) return <LoadingPage />;
   if (error) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="text-center">
-          <h2 className="text-3xl font-semibold text-blue-600 mb-4">Oops!</h2>
-          <p className="text-xl text-gray-700">{error}</p>
-        </div>
-      </div>
-    );
+    return  (<EmptyState title="Oops!" message={error}/>)
   }
 
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-4">
       <h2 className="text-2xl font-bold mb-4">Unapproved Quotes</h2>
-
-      {quotes.length === 0 ? (
-          <EmptyState
-            title="Nothing to review!"
-            message="No unapproved quotes — looks like everyone’s on the same page!"
-          />
-      ) : (
-        quotes.map((q) => (
-          <QuoteChip
-            quote={q}
-            user={user}
-            onError={setError}
-            showVisibilityIcon={false}
-            showSignButtons={false}
-          />
-        ))
+      {!loading && (
+        quotes.length === 0 ? (
+            <EmptyState
+              title="Nothing to review!"
+              message="No unapproved quotes — looks like everyone’s on the same page!"
+            />
+        ) : (
+          quotes.map((q) => (
+            <QuoteChip
+              quote={q}
+              user={user}
+              onError={setError}
+              showVisibilityIcon={false}
+              showSignButtons={false}
+            />
+          ))
+        )
       )}
     </div>
   );

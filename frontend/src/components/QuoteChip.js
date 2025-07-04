@@ -3,16 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { FiGlobe, FiLock } from "react-icons/fi";
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
+import { useSignature } from "../context/SignatureContext";
 
 export default function QuoteChip({
-  quote,
+  quote: initialQuote,
   user,
   onError,
   showVisibilityIcon = true,
-  showSignButtons = true
+  showSignButtons = true,
+  fadeBackIn = true
 }) {
   const navigate = useNavigate();
-  const [hidden, setHidden] = useState(false);
+  const [quote, setQuote] = useState(initialQuote);
+  const [fadeIn, setFadeIn] = useState(true); // 🔄
+  
+  const { refreshCount } = useSignature();
+  const [isRemoved, setIsRemoved] = useState(false);
 
   const isParticipant = quote.participant_status?.some(p => p.name === user?.username);
   const participantData = quote.participant_status?.find(p => p.name === user?.username);
@@ -27,24 +33,40 @@ export default function QuoteChip({
 
   const handleRefuse = async () => {
     try {
-      await api.post("/api/signatures/refuse/", {
+        await api.post("/api/signatures/refuse/", {
         quote_id: quote.id
-      }, {
+        }, {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") }
-      });
+        });
 
-      setHidden(true);
+        setFadeIn(false); // fade out
+
+        setTimeout(() => {
+          if (!fadeBackIn) {
+            setIsRemoved(true); // Actually remove from DOM
+          } else {
+            // If fading back in, fetch updated data
+            api.get(`/api/quotes/${quote.id}/`, { withCredentials: true })
+              .then(res => {
+                setQuote(res.data);
+                setFadeIn(true); // Fade back in if allowed
+              });
+          }
+
+          refreshCount();
+        }, 300); // Match your transition duration
     } catch (error) {
-      if (onError) onError("Error refusing to sign. Please try again.");
+        if (onError) onError("Error refusing to sign. Please try again.");
     }
-  };
+    };
 
-  if (hidden) return null;
+
+  if (isRemoved) return null;
 
   return (
     <div
-      className="relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition cursor-pointer"
+      className={`relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition cursor-pointer duration-300 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}
       onClick={() => navigate(`/quote/${quote.id}`)}
     >
       {showVisibilityIcon && (
@@ -103,7 +125,7 @@ export default function QuoteChip({
       {(shouldShowSignButton || shouldShowRefuseButton) && (
         <div
           className="mt-4 flex flex-wrap gap-3"
-          onClick={(e) => e.stopPropagation()} // prevent card click nav
+          onClick={(e) => e.stopPropagation()}
         >
           {shouldShowSignButton && (
             <button

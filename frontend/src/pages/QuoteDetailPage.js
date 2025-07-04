@@ -6,9 +6,14 @@ import { FiGlobe, FiLock } from "react-icons/fi";
 import { confirmAlert } from "react-confirm-alert";
 import ErrorBanner from "../components/ErrorBanner"; // ✅ NEW IMPORT
 import EmptyState from "../components/EmptyState";
+import getCookie from "../utils/getCookie";
+import { useSignature } from "../context/SignatureContext";
+import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
+import LoadingPage from "../pages/LoadingPage";
 
 
-function QuoteDetailPage({ user }) {
+function QuoteDetailPage({user}) {
+  const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
   const [quote, setQuote] = useState(null);
@@ -16,6 +21,8 @@ function QuoteDetailPage({ user }) {
   const [signingAs, setSigningAs] = useState(null);
   const canvasRef = useRef(null);
   const [signaturePad, setSignaturePad] = useState(null);
+  const { refreshCount } = useSignature();
+  const { refreshUnapprovedCount } = useUnapprovedQuotes();
 
   useEffect(() => {
     if (user && id) {
@@ -25,7 +32,8 @@ function QuoteDetailPage({ user }) {
         .then((res) => setQuote(res.data))
         .catch(() =>
           setError("This quote is either private or could not be found.")
-        );
+        )
+        .finally(() => setLoading(false));
     }
   }, [id, user]);
 
@@ -82,20 +90,6 @@ function QuoteDetailPage({ user }) {
     };
   }, [quote]);
 
-  const getCookie = (name) => {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== "") {
-      const cookies = document.cookie.split(";");
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === name + "=") {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  };
 
   const handleSignatureSubmit = async () => {
     if (!signaturePad || signaturePad.isEmpty()) {
@@ -115,6 +109,7 @@ function QuoteDetailPage({ user }) {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
+      refreshCount();
       window.location.reload();
     } catch {
       setError("Error submitting signature.");
@@ -132,6 +127,7 @@ function QuoteDetailPage({ user }) {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
+      refreshCount();
       window.location.reload();
     } catch {
       setError("Error refusing to sign.");
@@ -160,6 +156,8 @@ function QuoteDetailPage({ user }) {
                 withCredentials: true,
                 headers: { "X-CSRFToken": getCookie("csrftoken") },
               });
+              refreshUnapprovedCount();
+              refreshCount();
               navigate("/");
             } catch {
               setError("Failed to delete quote.");
@@ -173,11 +171,10 @@ function QuoteDetailPage({ user }) {
     });
   };
 
-  if (error && !quote) {
-    return  (  <EmptyState
-                title="Oops!"
-                message={error}
-              />)
+  //if (loading) return <LoadingPage />;
+
+  if (error) {
+    return  (<EmptyState title="Oops!" message={error}/>)
   }
 
   if (!quote || !user) return;
