@@ -65,6 +65,7 @@ class QuoteSerializer(serializers.ModelSerializer):
         return result
 
     def create(self, validated_data):
+        validated_data.pop('created_by', None)
         lines_data = validated_data.pop('lines', [])
         participants = validated_data.pop('participants', [])
         quote = Quote.objects.create(created_by=self.context['request'].user, **validated_data)

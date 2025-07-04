@@ -3,21 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaPenFancy } from "react-icons/fa";
 import { MdOutlineGavel } from "react-icons/md";
 import axios from 'axios';
-
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
+import getCookie from "../utils/getCookie";
 
 function Navbar({ user, setUser, pendingSignatureCount, unapprovedCount }) {
   const navigate = useNavigate();
@@ -90,19 +76,20 @@ function Navbar({ user, setUser, pendingSignatureCount, unapprovedCount }) {
                 )}
               </Link>
 
-              {isAdmin && (
-                <Link
-                  to="/unapproved-quotes"
-                  className="relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-lg hover:shadow-lg hover:bg-gray-600 transition"
-                >
-                  <MdOutlineGavel size={20} title="Unapproved Quotes" />
-                  {unapprovedCount > 0 && (
-                    <span className="absolute -top-0 right-1 bg-yellow-500 text-white text-xs font-bold px-1 py-0 rounded-full">
-                      {unapprovedCount}
-                    </span>
-                  )}
-                </Link>
-              )}
+              <Link
+                to={isAdmin ? "/unapproved-quotes" : "/quotes/submitted"}
+                className="relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-lg hover:shadow-lg hover:bg-gray-600 transition"
+              >
+                <MdOutlineGavel
+                  size={20}
+                  title={isAdmin ? "Unapproved Quotes" : "Your Unapproved Submissions"}
+                />
+                {isAdmin && unapprovedCount > 0 && (
+                  <span className="absolute -top-0 right-1 bg-yellow-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+                    {unapprovedCount}
+                  </span>
+                )}
+              </Link>
 
               {user ? (
                 <>

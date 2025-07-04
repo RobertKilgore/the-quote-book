@@ -1,24 +1,24 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import QuoteChip from "../components/QuoteChip";
 import EmptyState from "../components/EmptyState";
 
 
-export default function UnapprovedQuotesPage({ user }) {
+export default function SubmittedQuotesPage({ user }) {
   const [quotes, setQuotes] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get("/api/quotes/unapproved/", { withCredentials: true })
+    api.get("/api/quotes/submitted/", { withCredentials: true })
       .then(res => {
         setQuotes(res.data);
         setError(null);
       })
-      .catch(err => {
-        console.error("Failed to fetch unapproved quotes:", err);
-        setError("Failed to load unapproved quotes. Please try again later.");
+      .catch(() => {
+        setError("Failed to fetch your submitted quotes.");
+        setQuotes([]);
       });
   }, []);
 

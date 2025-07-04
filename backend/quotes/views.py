@@ -147,7 +147,12 @@ def submit_signature(request):
         traceback_str = traceback.format_exc()
         return Response({"error": str(e), "trace": traceback_str}, status=400)
 
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def submitted_unapproved_quotes(request):
+    quotes = Quote.objects.filter(created_by=request.user, approved=False)
+    serializer = QuoteSerializer(quotes, many=True)
+    return Response(serializer.data)
 
 
 
@@ -176,7 +181,28 @@ class QuoteViewSet(viewsets.ModelViewSet):
         ).distinct()
 
     def perform_create(self, serializer):
-        serializer.save()
+        user = self.request.user
+
+        if user.is_superuser:
+        # Allow admin to submit their own values
+            serializer.save(created_by=user)
+        else:
+            # Force standard users to safe defaults
+            serializer.save(
+                created_by=user,
+                visible=False,
+                approved=False
+            )
+
+    def update(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Only admins can update quotes.")
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Only admins can update quotes.")
+        return super().partial_update(request, *args, **kwargs)
     
     def list(self, request, *args, **kwargs):
         print("📌 Logged in user:", request.user)
@@ -197,12 +223,12 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
         # Only allow access to approved quotes if user is participant or visible
         if quote.approved:
-            if quote.visible or user in quote.participants.all():
+            if quote.visible or user in quote.participants.all() or user == quote.created_by:
                 return quote
             raise PermissionDenied("You do not have access to this quote.")
 
         # Only allow access to unapproved quotes if user is a participant
-        if user in quote.participants.all():
+        if user in quote.participants.all() or user == quote.created_by:
             return quote
 
         raise PermissionDenied("You do not have access to this unapproved quote.")
@@ -220,11 +246,11 @@ class QuoteViewSet(viewsets.ModelViewSet):
         # 🔒 Access control:
         if not quote.approved:
             # Only admins and participants can see unapproved quotes
-            if not user.is_superuser and user not in quote.participants.all():
+            if not user.is_superuser and user not in quote.participants.all() and user != quote.created_by:
                 raise PermissionDenied("You do not have access to this unapproved quote.")
         else:
             # For approved quotes, user must be admin, participant, or visibility = True
-            if not quote.visible and user not in quote.participants.all() and not user.is_superuser:
+            if not quote.visible and user not in quote.participants.all() and not user.is_superuser and  user == quote.created_by:
                 raise PermissionDenied("You do not have access to this quote.")
 
         serializer = self.get_serializer(quote)

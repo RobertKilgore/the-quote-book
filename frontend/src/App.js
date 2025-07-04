@@ -12,6 +12,7 @@ import AdminRoute from "./components/AdminRoute";
 import PrivateRoute from "./components/PrivateRoute";
 import PendingSignatures from "./pages/PendingSignatures";
 import UnapprovedQuotePage from "./pages/UnapprovedQuotePage";
+import SubmittedQuotesPage from "./pages/SubmittedQuotesPage";
 import axios from "axios";
 import 'react-confirm-alert/src/react-confirm-alert.css';
 
@@ -106,6 +107,15 @@ function AppRoutes({ user, loading, setUser, setPendingSignatureCount, setUnappr
           </PrivateRoute>
         }
       />
+      
+      <Route 
+        path="/quotes/submitted" 
+        element={
+          <PrivateRoute user={user} loading={loading}>
+            <SubmittedQuotesPage user={user}/>
+          </PrivateRoute>
+        } 
+      />  
 
       <Route
         path="/create-quote"

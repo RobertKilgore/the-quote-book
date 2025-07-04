@@ -5,6 +5,8 @@ import SignaturePad from "signature_pad";
 import { FiGlobe, FiLock } from "react-icons/fi";
 import { confirmAlert } from "react-confirm-alert";
 import ErrorBanner from "../components/ErrorBanner"; // ✅ NEW IMPORT
+import EmptyState from "../components/EmptyState";
+
 
 function QuoteDetailPage({ user }) {
   const { id } = useParams();
@@ -172,17 +174,13 @@ function QuoteDetailPage({ user }) {
   };
 
   if (error && !quote) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="text-center">
-          <h2 className="text-3xl font-semibold text-blue-600 mb-4">Oops!</h2>
-          <p className="text-xl text-gray-700">{error}</p>
-        </div>
-      </div>
-    );
+    return  (  <EmptyState
+                title="Oops!"
+                message={error}
+              />)
   }
 
-  if (!quote || !user) return <p>Loading...</p>;
+  if (!quote || !user) return;
 
   const displayDate = quote.date
     ? new Date(quote.date).toLocaleDateString()
