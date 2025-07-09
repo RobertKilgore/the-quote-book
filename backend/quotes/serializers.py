@@ -36,9 +36,14 @@ class SignatureSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser', 'name']
+
+    def get_name(self, obj):
+        full_name = f"{obj.first_name} {obj.last_name}".strip()
+        return full_name if full_name else obj.username
 
 class AccountRequestSerializer(serializers.ModelSerializer):
     class Meta:

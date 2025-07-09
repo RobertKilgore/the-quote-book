@@ -50,11 +50,13 @@ function LoginPage({ user, setUser, loading }) {
         withCredentials: true,
       });
 
-      setUser({
-        username: res.data.user,
-        isSuperuser: res.data.is_superuser,
-        id: res.data.id,
-      });
+        setUser({
+          id: res.data.id,
+          name: res.data.name,
+          username: res.data.username,
+          email: res.data.email,
+          isSuperuser: res.data.is_superuser,
+        });
 
       navigate("/");
     } catch (err) {
@@ -74,7 +76,7 @@ function LoginPage({ user, setUser, loading }) {
             className="w-full border px-3 py-2"
             type="text"
             value={username}
-            placeholder="Username"
+            placeholder="Username or Email"
             onChange={(e) => setUsername(e.target.value)}
           />
           <input

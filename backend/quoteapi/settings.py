@@ -177,12 +177,14 @@ CSRF_COOKIE_DOMAIN = "127.0.0.1"
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
+    "http://10.0.0.128:3000"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
+    "http://10.0.0.128:3000"
 ]
 
 

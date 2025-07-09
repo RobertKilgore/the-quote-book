@@ -43,6 +43,7 @@ export default function PendingSignaturesPage({user}) {
         ) : (
           quotes.map((q) => (
             <QuoteChip
+              key={q.id}
               quote={q}
               user={user}
               onError={setError}

@@ -18,28 +18,31 @@ import AdminApprovalPage from "./pages/AdminApprovalPage";
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
 import PrivateRoute from "./components/PrivateRoute";
-
+import useScrollRestoration from "./hooks/useScrollRestoration";
 
 import { useSignature } from "./context/SignatureContext";
 import { useUnapprovedQuotes } from "./context/UnapprovedQuoteContext";
 
-
 import "react-confirm-alert/src/react-confirm-alert.css";
 
 function App() {
- 
   const { refreshCount } = useSignature();
   const { refreshUnapprovedCount } = useUnapprovedQuotes();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Scroll restoration is now inside the Router context
+  //useScrollRestoration();
 
   useEffect(() => {
     axios.get("http://127.0.0.1:8000/api/test-auth/", { withCredentials: true })
       .then(res => {
         setUser({
           id: res.data.id,
-          username: res.data.user,
-          isSuperuser: res.data.is_superuser
+          name: res.data.name,
+          username: res.data.username,
+          email: res.data.email,
+          isSuperuser: res.data.is_superuser,
         });
       })
       .catch(() => setUser(null))
@@ -58,6 +61,7 @@ function App() {
   }
 
   return (
+    // Wrap the entire app with Router to provide routing context for useLocation
     <Router>
       <Navbar user={user} setUser={setUser} />
       <div className="pt-16 p-4">
@@ -68,7 +72,7 @@ function App() {
 }
 
 function AppRoutes({ user, loading, setUser }) {
-  const location = useLocation();
+  const location = useLocation(); // Can now safely use useLocation() because Router is wrapping the app
 
   return (
     <Routes>

@@ -65,60 +65,65 @@ export default function AdminApprovalPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 space-y-4">
-      <h2 className="text-2xl font-bold mb-4">Pending Account Requests</h2>
+    <>
+      {/* Error banner appears at the top */}
       <ErrorBanner message={error} />
 
-      {loading ? (
-        <LoadingPage />
-      ) : requests.length === 0 ? (
-        <EmptyState
-          title="All clear!"
-          message="No pending account requests at the moment."
-        />
-      ) : (
-        <div className="space-y-4">
-          {requests.map((req) => (
-            <div
-              key={req.id}
-              className={`flex flex-wrap justify-between items-center border border-gray-300 p-4 rounded-md shadow-sm bg-gray-50 transition-opacity duration-500 ${
-                fadingIds.includes(req.id) ? "opacity-0" : "opacity-100"
-              }`}
-            >
-              <div>
-                <p>
-                  <span className="font-medium">Username:</span> {req.username}
-                </p>
-                <p>
-                  <span className="font-medium">Name:</span> {req.first_name}{" "}
-                  {req.last_name}
-                </p>
-                <p>
-                  <span className="font-medium">Email:</span> {req.email}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Requested at: {new Date(req.submitted_at).toLocaleString()}
-                </p>
-              </div>
+      <div className="max-w-4xl mx-auto mt-8 space-y-4">
+        <h2 className="text-2xl font-bold mb-4">Pending Account Requests</h2>
 
-              <div className="flex gap-2 mt-4 sm:mt-0 sm:flex-col">
-                <button
-                  onClick={() => handleApprove(req.id)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => handleReject(req.id)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                >
-                  Reject
-                </button>
+        {loading ? (
+          <LoadingPage />
+        ) : requests.length === 0 ? (
+          <EmptyState
+            title="All clear!"
+            message="No pending account requests at the moment."
+          />
+        ) : (
+          <div className="space-y-4">
+            {requests.map((req) => (
+              <div
+                key={req.id}
+                className={`relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition cursor-pointer duration-300 ${
+                  fadingIds.includes(req.id) ? "opacity-0" : "opacity-100"
+                }`}
+              >
+                <div>
+                  <p>
+                    <span className="font-medium">Username:</span> {req.username}
+                  </p>
+                  <p>
+                    <span className="font-medium">Name:</span> {req.first_name}{" "}
+                    {req.last_name}
+                  </p>
+                  <p>
+                    <span className="font-medium">Email:</span> {req.email}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Requested at: {new Date(req.submitted_at).toLocaleString()}
+                  </p>
+                </div>
+
+                {/* Buttons placed directly under the "Requested at" section */}
+                <div className="mt-2 gap-4 flex flex-col sm:flex-row sm:gap-4">
+                  <button
+                    onClick={() => handleApprove(req.id)}
+                    className="w-full sm:w-auto px-4 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-colors duration-200"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleReject(req.id)}
+                    className="w-full sm:w-auto px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors duration-200"
+                  >
+                    Reject
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

@@ -183,7 +183,7 @@ function QuoteDetailPage({user}) {
     : "Unknown";
   const displayTime = quote.time || "Unknown";
 
-  const eligibleSigners = quote.participants.filter((p) => {
+  const eligibleSigners = quote.participants_detail.filter((p) => {
     const match = quote.signatures.find((sig) => sig.user === p.id);
     return !match || (!match.signature_image && !match.refused);
   });
@@ -243,32 +243,25 @@ function QuoteDetailPage({user}) {
         </div>
 
         <div className="flex flex-wrap gap-3 mt-6">
-          {quote.participants.map((p, idx) => {
-            const sig = quote.signatures.find((s) => s.user === p.id);
-            return (
-              <div
-                key={idx}
-                className="border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50"
-              >
-                <span className="font-semibold">{p.username}</span>
-                {sig?.refused ? (
-                  <span className="text-red-600 font-medium mt-1">
-                    Refusal to sign
-                  </span>
-                ) : sig?.signature_image ? (
-                  <img
-                    src={sig.signature_image}
-                    alt="signature"
-                    className="h-12 mt-1"
-                  />
-                ) : (
-                  <span className="text-gray-400 italic mt-1">
-                    No signature yet
-                  </span>
-                )}
-              </div>
-            );
-          })}
+          {quote.participant_status?.map((p, idx) => (
+            <div
+              key={idx}
+              className="border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50"
+            >
+              <span className="font-semibold">{p.name}</span>
+              {p.refused ? (
+                <span className="text-red-600 font-medium mt-1">Refusal to sign</span>
+              ) : p.signature_image ? (
+                <img
+                  src={p.signature_image}
+                  alt="signature"
+                  className="h-12 mt-1 max-w-[150px] object-contain"
+                />
+              ) : (
+                <span className="text-gray-400 italic mt-1">No signature yet</span>
+              )}
+            </div>
+          ))}
         </div>
 
         {canSign && (
@@ -283,14 +276,14 @@ function QuoteDetailPage({user}) {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Sign as:
                 </label>
-                <select
-                  className="border rounded px-3 py-1 text-sm w-full"
-                  value={signingAs}
-                  onChange={(e) => setSigningAs(e.target.value)}
-                >
+                  <select
+                    className="border rounded px-3 py-1 text-sm w-full"
+                    value={signingAs ?? ""}
+                    onChange={(e) => setSigningAs(e.target.value)}
+                  >
                   {eligibleSigners.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.username}
+                      {p.name}
                     </option>
                   ))}
                 </select>
@@ -335,7 +328,7 @@ function QuoteDetailPage({user}) {
             <strong>Approved:</strong> {quote.approved ? "Yes" : "No"}
           </p>
           <p>
-            <strong>Created by:</strong> {quote.created_by?.username}
+            <strong>Created by:</strong> {quote.created_by?.name}
           </p>
           <p>
             <strong>Created at:</strong>{" "}

@@ -5,12 +5,15 @@ import { FiPlus } from "react-icons/fi";
 import QuoteChip from "../components/QuoteChip";
 import EmptyState from "../components/EmptyState";
 import LoadingPage from "../pages/LoadingPage";
+import useScrollRestoration from "../hooks/useScrollRestoration";
 
 export default function HomePage({user}) {
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+
 
   useEffect(() => {
     api.get("/api/quotes/", { withCredentials: true })
@@ -24,11 +27,13 @@ export default function HomePage({user}) {
       .finally(() => setLoading(false));
   }, [user]);
 
+
+
+  //useScrollRestoration();
   //if (loading) return <LoadingPage />;
   if (error) {
     return  (<EmptyState title="Oops!" message={error}/>)
   }
-
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-4">
       <h2 className="text-2xl font-bold mb-4">Quotes</h2>
@@ -41,6 +46,7 @@ export default function HomePage({user}) {
         ) : (
           quotes.map((q) => (
             <QuoteChip
+              key={q.id}
               quote={q}
               user={user}
               onError={setError}

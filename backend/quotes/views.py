@@ -26,15 +26,11 @@ class IsApprovedUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and request.user.is_active
 
-
-@api_view(["GET"])
+@api_view(['GET'])  # ✅ Required for DRF to set renderer & context
+@permission_classes([IsAuthenticated])
 def test_auth(request):
-    return Response({
-        "user": str(request.user),
-        "is_authenticated": request.user.is_authenticated,
-        "is_superuser": request.user.is_superuser,
-        "id": request.user.id,
-    })
+    user_data = UserSerializer(request.user).data  # serialize user properly
+    return Response(user_data)
 
 def get_csrf(request):
     return JsonResponse({'csrfToken': request.META.get('CSRF_COOKIE', '')})

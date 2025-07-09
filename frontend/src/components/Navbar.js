@@ -40,6 +40,7 @@ function Navbar({ user, setUser, loading }) {
 
   const isAdmin = user?.isSuperuser;
 
+
   if (loading) return null;
   return (
     <div className={isLoginLikePage ? "" : "max-w-4xl mx-auto"}>
@@ -118,7 +119,7 @@ function Navbar({ user, setUser, loading }) {
               {user ? (
                 <>
                   <span className="hidden md:inline-block truncate whitespace-nowrap max-w-[400px]">
-                    Logged in as <strong>{user.username}</strong>{isAdmin && <span title="Admin"> 🛡️</span>}
+                    Logged in as <strong>{user.name}</strong>{isAdmin && <span title="Admin"> 🛡️</span>}
                   </span>
 
                   <button

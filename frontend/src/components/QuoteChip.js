@@ -15,13 +15,12 @@ export default function QuoteChip({
 }) {
   const navigate = useNavigate();
   const [quote, setQuote] = useState(initialQuote);
-  const [fadeIn, setFadeIn] = useState(true); // 🔄
-  
-  const { refreshCount } = useSignature();
+  const [fadeIn, setFadeIn] = useState(true);
   const [isRemoved, setIsRemoved] = useState(false);
+  const { refreshCount } = useSignature();
 
-  const isParticipant = quote.participant_status?.some(p => p.name === user?.username);
-  const participantData = quote.participant_status?.find(p => p.name === user?.username);
+  const isParticipant = quote.participant_status?.some(p => p.user === user?.id);
+  const participantData = quote.participant_status?.find(p => p.user === user?.id);
   const needsSignature = isParticipant && !participantData?.signature_image && !participantData?.refused;
 
   const hasUnsignedParticipant = quote.participant_status?.some(
@@ -33,34 +32,32 @@ export default function QuoteChip({
 
   const handleRefuse = async () => {
     try {
-        await api.post("/api/signatures/refuse/", {
+      await api.post("/api/signatures/refuse/", {
         quote_id: quote.id
-        }, {
+      }, {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") }
-        });
+      });
 
-        setFadeIn(false); // fade out
+      setFadeIn(false);
 
-        setTimeout(() => {
-          if (!fadeBackIn) {
-            setIsRemoved(true); // Actually remove from DOM
-          } else {
-            // If fading back in, fetch updated data
-            api.get(`/api/quotes/${quote.id}/`, { withCredentials: true })
-              .then(res => {
-                setQuote(res.data);
-                setFadeIn(true); // Fade back in if allowed
-              });
-          }
+      setTimeout(() => {
+        if (!fadeBackIn) {
+          setIsRemoved(true);
+        } else {
+          api.get(`/api/quotes/${quote.id}/`, { withCredentials: true })
+            .then(res => {
+              setQuote(res.data);
+              setFadeIn(true);
+            });
+        }
 
-          refreshCount();
-        }, 300); // Match your transition duration
+        refreshCount();
+      }, 300);
     } catch (error) {
-        if (onError) onError("Error refusing to sign. Please try again.");
+      if (onError) onError("Error refusing to sign. Please try again.");
     }
-    };
-
+  };
 
   if (isRemoved) return null;
 
@@ -69,12 +66,10 @@ export default function QuoteChip({
       className={`relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition cursor-pointer duration-300 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}
       onClick={() => navigate(`/quote/${quote.id}`)}
     >
-      {showVisibilityIcon && (
-        <VisibilityChip quote={quote}/>
-      )}
+      {showVisibilityIcon && <VisibilityChip quote={quote} />}
 
-      {quote.lines.map((line, idx) => (
-        <div key={idx} className="mb-1">
+      {quote.lines.map((line) => (
+        <div key={line.id || `${line.speaker_name}-${line.text}`} className="mb-1">
           <span className="font-semibold">{line.speaker_name}:</span>{" "}
           {quote.redacted ? (
             <span className="text-red-600 font-bold">[REDACTED]</span>
@@ -90,9 +85,9 @@ export default function QuoteChip({
 
       <div className="mt-2 flex flex-wrap gap-2">
         {quote.participant_status?.length > 0 ? (
-          quote.participant_status.map((p, idx) => (
+          quote.participant_status.map((p) => (
             <div
-              key={idx}
+              key={p.user}
               className="bg-gray-100 border border-gray-300 px-3 py-1 rounded-lg text-sm text-gray-800 flex items-center gap-2"
             >
               <span className="font-semibold">{p.name}</span>
