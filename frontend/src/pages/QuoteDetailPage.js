@@ -2,14 +2,13 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import SignaturePad from "signature_pad";
-import { FiGlobe, FiLock } from "react-icons/fi";
 import { confirmAlert } from "react-confirm-alert";
 import ErrorBanner from "../components/ErrorBanner"; // ✅ NEW IMPORT
 import EmptyState from "../components/EmptyState";
 import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
-import LoadingPage from "../pages/LoadingPage";
+import VisibilityChip from "../components/VisibilityChip";
 
 
 function QuoteDetailPage({user}) {
@@ -214,15 +213,7 @@ function QuoteDetailPage({user}) {
     <>
       <ErrorBanner message={error} />
       <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
-        <div className="absolute top-12 right-4">
-          <div className="bg-white shadow-md ring-1 ring-gray-200 rounded-full p-2">
-            {quote.visible ? (
-              <FiGlobe className="text-blue-500 text-xl" />
-            ) : (
-              <FiLock className="text-yellow-500 text-xl" />
-            )}
-          </div>
-        </div>
+        <VisibilityChip quote={quote}/>
 
         <h2 className="text-2xl font-bold text-center mb-2">Quote Details</h2>
 
@@ -237,8 +228,9 @@ function QuoteDetailPage({user}) {
           {quote.lines.map((line, idx) => (
             <div key={idx} className="pl-4 border-l-4 border-blue-400">
               {quote.redacted ? (
-                <p className="text-red-600 font-bold">
-                  {line.speaker_name}: [REDACTED]
+                <p>
+                  <span className="font-semibold">{line.speaker_name}</span>:{" "}
+                  <span className="text-red-600 font-bold">[REDACTED]</span>
                 </p>
               ) : (
                 <p>

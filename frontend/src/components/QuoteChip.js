@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiGlobe, FiLock } from "react-icons/fi";
+import VisibilityChip from "../components/VisibilityChip";
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
@@ -70,15 +70,7 @@ export default function QuoteChip({
       onClick={() => navigate(`/quote/${quote.id}`)}
     >
       {showVisibilityIcon && (
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-          <div className="bg-white shadow-md ring-1 ring-gray-200 rounded-full p-2">
-            {quote.visible ? (
-              <FiGlobe className="text-blue-500 text-lg" />
-            ) : (
-              <FiLock className="text-yellow-500 text-lg" />
-            )}
-          </div>
-        </div>
+        <VisibilityChip quote={quote}/>
       )}
 
       {quote.lines.map((line, idx) => (

@@ -129,6 +129,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_AUTH_SERIALIZERS = {
+    'LOGIN_SERIALIZER': 'dj_rest_auth.serializers.LoginSerializer',
+}
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # default
+    'allauth.account.auth_backends.AuthenticationBackend',  # ✅ Needed for email login
+]
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -152,9 +161,13 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-ACCOUNT_EMAIL_VERIFICATION = "none"  # optional unless you want email confirm
-ACCOUNT_AUTHENTICATION_METHOD = "username"
-ACCOUNT_EMAIL_REQUIRED = False
+SITE_ID = 1
+
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = "username_email"  # ✅ required
+ACCOUNT_LOGIN_METHOD = "username_email"           # ✅ optional but recommended
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
 ACCOUNT_SIGNUP_REDIRECT_URL = "/"  # or custom route
 ACCOUNT_ADAPTER = "quotes.adapter.NoAutoActivateAccountAdapter"
 SESSION_COOKIE_DOMAIN = "127.0.0.1"

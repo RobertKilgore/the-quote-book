@@ -1,6 +1,15 @@
 from rest_framework import serializers
-from .models import Quote, QuoteLine, Signature
+from .models import Quote, QuoteLine, Signature, AccountRequest
 from django.contrib.auth.models import User
+from allauth.account import app_settings as allauth_settings
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.debug(f"LOGIN_METHOD: {allauth_settings.LOGIN_METHODS}")
+logger.debug(f"USERNAME_REQUIRED: {allauth_settings.USERNAME_REQUIRED}")
+logger.debug(f"EMAIL_REQUIRED: {allauth_settings.EMAIL_REQUIRED}")
+
 
 class QuoteLineSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(required=False, allow_null=True)
@@ -30,6 +39,20 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
+
+class AccountRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountRequest
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'username',
+            'email',
+            'submitted_at',
+            'approved'
+        ]
+        read_only_fields = ['id', 'submitted_at', 'approved', 'processed']
 
 
 class QuoteSerializer(serializers.ModelSerializer):

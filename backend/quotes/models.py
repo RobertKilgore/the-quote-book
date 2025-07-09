@@ -3,6 +3,16 @@ from django.contrib.auth.models import User
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 
+class AccountRequest(models.Model):
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    approved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.username})"
 
 class Quote(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quotes_created')

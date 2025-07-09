@@ -12,12 +12,14 @@ from rest_framework.response import Response
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from .serializers import UserSerializer
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied
 import base64
+from .models import AccountRequest
+from .serializers import AccountRequestSerializer
 
 
 class IsApprovedUser(permissions.BasePermission):
@@ -288,3 +290,45 @@ class QuoteLineViewSet(viewsets.ModelViewSet):
     queryset = QuoteLine.objects.all()
     serializer_class = QuoteLineSerializer
     permission_classes = [IsApprovedUser]
+
+
+class AccountRequestViewSet(viewsets.ModelViewSet):
+    queryset = AccountRequest.objects.all().order_by('-submitted_at')
+    serializer_class = AccountRequestSerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'update', 'partial_update', 'destroy', 'approve']:
+            return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        account_request = self.get_object()
+
+        # Prevent duplicate user creation
+        if User.objects.filter(username=account_request.username).exists():
+            return Response({"error": "Username already exists"}, status=400)
+        if User.objects.filter(email=account_request.email).exists():
+            return Response({"error": "Email already exists"}, status=400)
+
+        # Create user with no password yet — will set it later
+        user = User.objects.create_user(
+            username=account_request.username,
+            email=account_request.email,
+            first_name=account_request.first_name,
+            last_name=account_request.last_name,
+            password=None
+        )
+        user.is_active = False  # Let them activate later via password reset link
+        user.save()
+
+        # Mark request as approved
+        account_request.delete()
+
+        return Response({"success": "User approved and created. Awaiting password setup."}, status=201)

@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import { FaPenFancy } from "react-icons/fa";
 import { MdOutlineGavel } from "react-icons/md";
+import { FaUserShield } from "react-icons/fa6"; // 👈 NEW: Icon for account requests
 import axios from 'axios';
 import getCookie from "../utils/getCookie";
+
+// 🔄 Placeholder for future context
+// You can implement this like the others
+const useUnapprovedUsers = () => ({ userRequestCount: 0 });
 
 function Navbar({ user, setUser, loading }) {
   const { unapprovedCount } = useUnapprovedQuotes();
   const { pendingCount } = useSignature();
+  const { userRequestCount } = useUnapprovedUsers(); // 👈 New placeholder
   const navigate = useNavigate();
   const location = useLocation();
   const isLoginLikePage = location.pathname === "/login" || location.pathname === "/request-account";
@@ -63,7 +69,6 @@ function Navbar({ user, setUser, loading }) {
             </div>
           </div>
         ) : (
-
           <>
             <div className="flex items-center space-x-4">
               <Link to="/" className="text-lg font-semibold hover:underline">The Quote Book</Link>
@@ -95,6 +100,20 @@ function Navbar({ user, setUser, loading }) {
                   </span>
                 )}
               </Link>
+
+              {isAdmin && (
+                <Link
+                  to="/account-requests"
+                  className="relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-lg hover:shadow-lg hover:bg-gray-600 transition"
+                >
+                  <FaUserShield size={18} title="Pending User Requests" />
+                  {userRequestCount > 0 && (
+                    <span className="absolute -top-0 -right-0 bg-green-600 text-white text-xs font-bold px-1 py-0 rounded-full">
+                      {userRequestCount}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {user ? (
                 <>

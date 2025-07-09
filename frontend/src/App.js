@@ -13,6 +13,7 @@ import PendingSignatures from "./pages/PendingSignatures";
 import UnapprovedQuotePage from "./pages/UnapprovedQuotePage";
 import SubmittedQuotesPage from "./pages/SubmittedQuotesPage";
 import LoadingPage from "./pages/LoadingPage";
+import AdminApprovalPage from "./pages/AdminApprovalPage";
 
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
@@ -142,6 +143,15 @@ function AppRoutes({ user, loading, setUser }) {
         element={
           <AdminRoute user={user} loading={loading}>
             <UnapprovedQuotePage user={user} loading={loading}/>
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/account-requests"
+        element={
+          <AdminRoute user={user} loading={loading}>
+            <AdminApprovalPage />
           </AdminRoute>
         }
       />
