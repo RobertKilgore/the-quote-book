@@ -21,7 +21,8 @@ class Quote(models.Model):
     time = models.TimeField(null=True, blank=True)
     visible = models.BooleanField(default=False)  # renamed from is_public
     redacted = models.BooleanField(default=False)
-    approved = models.BooleanField(default=False)  # ✅ new
+    approved = models.BooleanField(default=False)  
+    approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

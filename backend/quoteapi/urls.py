@@ -27,6 +27,7 @@ def set_csrf_cookie(request):
     return JsonResponse({"detail": "CSRF cookie set"})
 
 urlpatterns = [
+    path('debug/refuse/', views.debug_run_refuse),
     path("users/unapproved/count/", views.unapproved_user_count),
     path("api/quotes/submitted/", views.submitted_unapproved_quotes),
     path('api/quotes/unapproved/count/', views.unapproved_quotes_count, name='unapproved-quotes-count'),

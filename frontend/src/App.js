@@ -14,6 +14,7 @@ import UnapprovedQuotePage from "./pages/UnapprovedQuotePage";
 import SubmittedQuotesPage from "./pages/SubmittedQuotesPage";
 import LoadingPage from "./pages/LoadingPage";
 import AdminApprovalPage from "./pages/AdminApprovalPage";
+import DebugJobsPage from "./pages/DebugJobsPage";
 
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
@@ -156,6 +157,15 @@ function AppRoutes({ user, loading, setUser }) {
         element={
           <AdminRoute user={user} loading={loading}>
             <AdminApprovalPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/debug-jobs"
+        element={
+          <AdminRoute user={user} loading={loading}>
+            <DebugJobsPage user={user} />
           </AdminRoute>
         }
       />

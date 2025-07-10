@@ -18,10 +18,11 @@ from django.http import Http404
 from django.core.files.base import ContentFile
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAdminUser
+from django.utils import timezone 
 import base64
 from .models import AccountRequest
 from .serializers import AccountRequestSerializer
+from scheduler.jobs import auto_refuse_stale_quotes
 
 
 
@@ -33,6 +34,13 @@ class IsSuperUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_superuser)
 
+
+
+@api_view(["POST"])
+@permission_classes([IsSuperUser])
+def debug_run_refuse(request):
+    auto_refuse_stale_quotes(15)
+    return Response({"status": "Manually triggered"}, status=200)
 
 @api_view(['GET'])  # ✅ Required for DRF to set renderer & context
 @permission_classes([IsApprovedUser])
@@ -196,25 +204,49 @@ class QuoteViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         if user.is_superuser:
-        # Allow admin to submit their own values
-            serializer.save(created_by=user)
+            # Check if admin marked it as approved on creation
+            approved = serializer.validated_data.get("approved", False)
+            if approved:
+                serializer.save(created_by=user, approved_at=timezone.now())
+            else:
+                serializer.save(created_by=user)
         else:
-            # Force standard users to safe defaults
+            # Force safe defaults for normal users
             serializer.save(
                 created_by=user,
                 visible=False,
-                approved=False
+                approved=False,
+                approved_at=None
             )
 
     def update(self, request, *args, **kwargs):
         if not request.user.is_superuser:
             raise PermissionDenied("Only admins can update quotes.")
-        return super().update(request, *args, **kwargs)
+
+        response = super().update(request, *args, **kwargs)
+
+        # ✅ If the update just approved the quote, set approved_at
+        instance = self.get_object()
+        if instance.approved:
+            instance.approved_at = timezone.now()
+            instance.save()
+
+        return response
 
     def partial_update(self, request, *args, **kwargs):
         if not request.user.is_superuser:
             raise PermissionDenied("Only admins can update quotes.")
-        return super().partial_update(request, *args, **kwargs)
+
+        instance = self.get_object()
+        response = super().partial_update(request, *args, **kwargs)
+
+        # Set approved_at if just approved
+        approved_now = self.get_object().approved
+        if approved_now:
+            instance.approved_at = timezone.now()
+            instance.save()
+
+        return response
     
     def list(self, request, *args, **kwargs):
         print("📌 Logged in user:", request.user)

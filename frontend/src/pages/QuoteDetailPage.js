@@ -229,6 +229,8 @@ function QuoteDetailPage({ user }) {
     quote.approved &&
     ((userIsParticipant && !userHasSignedOrRefused) || adminHasEligibleUsers);
 
+
+  console.log(quote)
   return (
     <>
       <ErrorBanner message={error} />
@@ -358,34 +360,40 @@ function QuoteDetailPage({ user }) {
         )}
 
         <div className="pt-6 border-t mt-6 text-sm text-gray-700 space-y-1">
-  <p>
-    <strong>Approved:</strong> {quote.approved ? "Yes" : "No"}
-  </p>
-  <p>
-    <strong>Created by:</strong> {quote.created_by?.name}
-  </p>
-  <p>
-    <strong>Created at:</strong>{" "}
-    {new Date(quote.created_at).toLocaleString()}
-  </p>
-</div>
+          <p>
+            <strong>Approved:</strong> {quote.approved ? "Yes" : "No"}
+          </p>
+          {quote.approved && quote.approved_at && (
+            <p>
+              <strong>Approved at:</strong>{" "}
+              {new Date(quote.approved_at).toLocaleString()}
+            </p>
+          )}
+          <p>
+            <strong>Created by:</strong> {quote.created_by?.name}
+          </p>
+          <p>
+            <strong>Created at:</strong>{" "}
+            {new Date(quote.created_at).toLocaleString()}
+          </p>
+        </div>
 
-{user?.isSuperuser && (
-  <div className="flex gap-3 mt-4">
-    <button
-      onClick={() => navigate(`/quote/${quote.id}/edit`)}
-      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-    >
-      Edit
-    </button>
-    <button
-      onClick={handleDelete}
-      className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
-    >
-      Delete
-    </button>
-  </div>
-)}
+        {user?.isSuperuser && (
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => navigate(`/quote/${quote.id}/edit`)}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            >
+              Edit
+            </button>
+            <button
+              onClick={handleDelete}
+              className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
+            >
+              Delete
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

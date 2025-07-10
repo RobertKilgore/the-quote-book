@@ -74,7 +74,7 @@ class QuoteSerializer(serializers.ModelSerializer):
         model = Quote
         fields = [
             'id', 'created_by', 'participants', 'participants_detail', 'created_at',
-            'date', 'time', 'visible', 'redacted', 'approved',
+            'date', 'time', 'visible', 'redacted', 'approved', 'approved_at',
             'lines', 'signatures', 'participant_status'
         ]
         read_only_fields = ['created_by', 'signatures', 'created_at']
