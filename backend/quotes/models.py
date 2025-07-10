@@ -24,6 +24,8 @@ class Quote(models.Model):
     approved = models.BooleanField(default=False)  
     approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    flagged_by = models.ManyToManyField(User, blank=True, related_name="flagged_quotes")
+    is_flagged = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Quote #{self.id} on {self.date} at {self.time}"

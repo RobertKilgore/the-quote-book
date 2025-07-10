@@ -5,6 +5,8 @@ import EmptyState from "../components/EmptyState";
 import getCookie from "../utils/getCookie";
 import LoadingPage from "./LoadingPage";
 import { useUnapprovedUserCount } from "../context/UnapprovedUserContext";
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
 
 export default function AdminApprovalPage() {
   const [requests, setRequests] = useState([]);
@@ -12,6 +14,26 @@ export default function AdminApprovalPage() {
   const [error, setError] = useState(null);
   const [fadingIds, setFadingIds] = useState([]);
   const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
+  const [users, setUsers] = useState([]);
+  const [userFadingIds, setUserFadingIds] = useState([]);
+
+  useEffect(() => {
+    fetchRequests();
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await api.get("/admin/users/", {
+        withCredentials: true,
+        headers: { "X-CSRFToken": getCookie("csrftoken") },
+      });
+      setUsers(res.data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load active users.");
+    }
+  };
 
   const fetchRequests = async () => {
     try {
@@ -26,10 +48,6 @@ export default function AdminApprovalPage() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchRequests();
-  }, []);
 
   const fadeOutThenRemove = (id) => {
     setFadingIds((prev) => [...prev, id]);
@@ -68,65 +86,136 @@ export default function AdminApprovalPage() {
     }
   };
 
+  const confirmDeleteUser = (id, username) => {
+    confirmAlert({
+      title: "Confirm Delete",
+      message: `Are you sure you want to delete user "${username}"? This action cannot be undone.`,
+      buttons: [
+        {
+          label: "Cancel",
+          className: "cancel-button",
+          onClick: () => {},
+        },
+        {
+          label: "Yes, Delete",
+          className: "delete-button",
+          onClick: () => handleDeleteUser(id),
+        },
+      ],
+      closeOnEscape: true,
+      closeOnClickOutside: true,
+    });
+  };
+
+  const handleDeleteUser = async (id) => {
+    try {
+      await api.delete(`/admin/users/${id}/`, {
+        withCredentials: true,
+        headers: { "X-CSRFToken": getCookie("csrftoken") },
+      });
+      setUserFadingIds((prev) => [...prev, id]);
+      setTimeout(() => {
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+      }, 500);
+    } catch {
+      setError("Could not delete user.");
+    }
+  };
+
   return (
     <>
-      {/* Error banner appears at the top */}
       <ErrorBanner message={error} />
 
-      <div className="max-w-4xl mx-auto mt-8 space-y-4">
-        <h2 className="text-2xl font-bold mb-4">Pending Account Requests</h2>
+      <div className="max-w-4xl mx-auto mt-8 space-y-8">
 
-        {loading ? (
-          <LoadingPage />
-        ) : requests.length === 0 ? (
-          <EmptyState
-            title="All clear!"
-            message="No pending account requests at the moment."
-          />
-        ) : (
-          <div className="space-y-4">
-            {requests.map((req) => (
-              <div
-                key={req.id}
-                className={`relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition cursor-pointer duration-300 ${
-                  fadingIds.includes(req.id) ? "opacity-0" : "opacity-100"
-                }`}
-              >
-                <div>
-                  <p>
-                    <span className="font-medium">Username:</span> {req.username}
-                  </p>
-                  <p>
-                    <span className="font-medium">Name:</span> {req.first_name}{" "}
-                    {req.last_name}
-                  </p>
-                  <p>
-                    <span className="font-medium">Email:</span> {req.email}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Requested at: {new Date(req.submitted_at).toLocaleString()}
-                  </p>
-                </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-4">All Users</h2>
+          {users.length === 0 ? (
+            <EmptyState
+              title="No users found."
+              message="There are no active users right now."
+            />
+          ) : (
+            <div className="space-y-4">
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  className={`relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition duration-300 ${
+                    userFadingIds.includes(user.id) ? "opacity-0" : "opacity-100"
+                  }`}
+                >
+                  <p><span className="font-medium">Username:</span> {user.username}</p>
+                  <p><span className="font-medium">Name:</span> {user.name}</p>
+                  <p><span className="font-medium">Email:</span> {user.email}</p>
+                  <p><span className="font-medium">Active:</span> {user.is_active ? "Yes" : "No"}</p>
+                  <p><span className="font-medium">Admin:</span> {user.is_superuser ? "Yes" : "No"}</p>
 
-                {/* Buttons placed directly under the "Requested at" section */}
-                <div className="mt-2 gap-4 flex flex-col sm:flex-row sm:gap-4">
-                  <button
-                    onClick={() => handleApprove(req.id)}
-                    className="w-full sm:w-auto px-4 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-colors duration-200"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleReject(req.id)}
-                    className="w-full sm:w-auto px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors duration-200"
-                  >
-                    Reject
-                  </button>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => confirmDeleteUser(user.id, user.username)}
+                      className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full"
+                    >
+                      Delete User
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Pending Account Requests</h2>
+          {loading ? (
+            <LoadingPage />
+          ) : requests.length === 0 ? (
+            <EmptyState
+              title="All clear!"
+              message="No pending account requests at the moment."
+            />
+          ) : (
+            <div className="space-y-4">
+              {requests.map((req) => (
+                <div
+                  key={req.id}
+                  className={`relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition cursor-pointer duration-300 ${
+                    fadingIds.includes(req.id) ? "opacity-0" : "opacity-100"
+                  }`}
+                >
+                  <div>
+                    <p>
+                      <span className="font-medium">Username:</span> {req.username}
+                    </p>
+                    <p>
+                      <span className="font-medium">Name:</span> {req.first_name} {req.last_name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Email:</span> {req.email}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Requested at: {new Date(req.submitted_at).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="mt-2 gap-4 flex flex-col sm:flex-row sm:gap-4">
+                    <button
+                      onClick={() => handleApprove(req.id)}
+                      className="w-full sm:w-auto px-4 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(req.id)}
+                      className="w-full sm:w-auto px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

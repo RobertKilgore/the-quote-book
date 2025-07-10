@@ -69,15 +69,35 @@ class QuoteSerializer(serializers.ModelSerializer):
     participants_detail = UserSerializer(source='participants', many=True, read_only=True)
     participant_status = serializers.SerializerMethodField()
     created_by = UserSerializer(read_only=True)
+    is_flagged = serializers.BooleanField(read_only=True)
+    has_flagged = serializers.SerializerMethodField()
+    flag_count = serializers.SerializerMethodField()
+    flagged_by_users = serializers.SerializerMethodField()
 
     class Meta:
         model = Quote
         fields = [
             'id', 'created_by', 'participants', 'participants_detail', 'created_at',
             'date', 'time', 'visible', 'redacted', 'approved', 'approved_at',
-            'lines', 'signatures', 'participant_status'
+            'lines', 'signatures', 'participant_status', 'is_flagged', 'has_flagged', "flag_count",
+            "flagged_by_users",
         ]
         read_only_fields = ['created_by', 'signatures', 'created_at']
+
+
+    def get_flag_count(self, obj):
+        return obj.flagged_by.count()
+
+    def get_flagged_by_users(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_superuser:
+            return [{"id": user.id, "name": user.get_full_name() or user.username} for user in obj.flagged_by.all()]
+        return None
+        
+    def get_has_flagged(self, obj):
+        user = self.context.get('request').user
+        return user.is_authenticated and obj.flagged_by.filter(id=user.id).exists()
+    
 
     def get_participant_status(self, obj):
         result = []
@@ -91,6 +111,7 @@ class QuoteSerializer(serializers.ModelSerializer):
                 "signed_at": sig.signed_at if sig else None,
             })
         return result
+
 
     def create(self, validated_data):
         validated_data.pop('created_by', None)

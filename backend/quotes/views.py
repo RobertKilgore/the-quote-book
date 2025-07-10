@@ -35,6 +35,37 @@ class IsSuperUser(permissions.BasePermission):
         return bool(request.user and request.user.is_superuser)
 
 
+@api_view(['GET'])
+@permission_classes([IsSuperUser])
+def list_users(request):
+    users = User.objects.filter()
+    data = [
+        {"id": u.id, "username": u.username, "email": u.email, "name": u.get_full_name(), "is_active": u.is_active, "is_superuser": u.is_superuser,}
+        for u in users
+    ]
+    return Response(data)
+
+@api_view(['DELETE'])
+@permission_classes([IsSuperUser])
+def delete_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(["POST"])
+@permission_classes([IsApprovedUser])
+def flag_quote(request, quote_id):
+    try:
+        quote = Quote.objects.get(id=quote_id)
+        quote.flagged_by.add(request.user)
+        quote.is_flagged = True
+        quote.save()
+        return Response({"success": "Quote flagged for review."}, status=status.HTTP_200_OK)
+    except Quote.DoesNotExist:
+        return Response({"error": "Quote not found."}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(["POST"])
 @permission_classes([IsSuperUser])
@@ -64,13 +95,14 @@ def unapproved_quotes(request):
 @api_view(['GET'])
 @permission_classes([IsApprovedUser])
 def pending_signatures(request):
-    user = request.user
-    all_quotes = Quote.objects.filter(participants=user, approved=True)
+    quotes = Quote.objects.filter(
+        approved=True,
+        participants=request.user
+    ).exclude(
+        signatures__user=request.user
+    ).distinct()
 
-    signed = Signature.objects.filter(user=user).values_list('quote_id', flat=True)
-    pending = all_quotes.exclude(id__in=signed)
-
-    serializer = QuoteSerializer(pending, many=True)
+    serializer = QuoteSerializer(quotes, many=True, context={'request': request})
     return Response(serializer.data)
 
 @api_view(['GET'])
@@ -220,10 +252,19 @@ class QuoteViewSet(viewsets.ModelViewSet):
             )
 
     def update(self, request, *args, **kwargs):
+        quote = self.get_object()
+
         if not request.user.is_superuser:
             raise PermissionDenied("Only admins can update quotes.")
 
         response = super().update(request, *args, **kwargs)
+
+
+        # Clear all flags
+        quote.flagged_by.clear()
+        quote.is_flagged = False
+        quote.save(update_fields=["is_flagged"])
+
 
         # ✅ If the update just approved the quote, set approved_at
         instance = self.get_object()
@@ -240,6 +281,11 @@ class QuoteViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         response = super().partial_update(request, *args, **kwargs)
 
+
+        # Clear all flags
+        instance.flagged_by.clear()
+        instance.is_flagged = False
+        instance.save(update_fields=["is_flagged"])
         # Set approved_at if just approved
         approved_now = self.get_object().approved
         if approved_now:

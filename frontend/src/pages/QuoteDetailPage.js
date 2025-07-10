@@ -18,7 +18,7 @@ function QuoteDetailPage({ user }) {
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState(null);
   const [signingAs, setSigningAs] = useState(null);
-  const [showSignForm, setShowSignForm] = useState(true);
+  const [canSign, setCanSign] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
 
   const canvasRef = useRef(null);
@@ -52,6 +52,31 @@ function QuoteDetailPage({ user }) {
       }
     }
   }, [user, quote]);
+
+  useEffect(() => {
+    if (!user || !quote) return;
+
+    const userIsParticipant = quote.participants.some(
+      (p) => String(p.id) === String(user.id)
+    );
+
+    const userHasSignedOrRefused = quote.signatures.some(
+      (sig) => sig.user === user.id && (sig.signature_image || sig.refused)
+    );
+
+    const adminHasEligibleUsers =
+      user.isSuperuser &&
+      quote.participants.some((p) => {
+        const sig = quote.signatures.find((s) => s.user === p.id);
+        return !sig || (!sig.signature_image && !sig.refused);
+      });
+    
+    if (!canSign)
+    setCanSign(
+      quote.approved &&
+        ((userIsParticipant && !userHasSignedOrRefused) || adminHasEligibleUsers)
+    );
+  }, [quote, user]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -117,10 +142,18 @@ function QuoteDetailPage({ user }) {
         return !sig || (!sig.signature_image && !sig.refused);
       });
 
-      if (stillEligible.length === 0) {
-        setFadingOut(true); // let onTransitionEnd handle hiding
+      const userHasSignedOrRefused = updatedQuote.signatures.some(
+        (s) => s.user === user.id && (s.signature_image || s.refused)
+      );
+
+      const shouldFadeOut =
+        (user.isSuperuser && stillEligible.length === 0) ||
+        (!user.isSuperuser && userHasSignedOrRefused);
+
+      if (shouldFadeOut) {
+        setFadingOut(true);
       } else {
-        setSigningAs(stillEligible[0].id);
+        setSigningAs(stillEligible[0]?.id ?? null);
       }
     } catch {
       setError("Error submitting signature.");
@@ -151,10 +184,18 @@ function QuoteDetailPage({ user }) {
         return !sig || (!sig.signature_image && !sig.refused);
       });
 
-      if (stillEligible.length === 0) {
-        setFadingOut(true); // let onTransitionEnd handle hiding
+      const userHasSignedOrRefused = updatedQuote.signatures.some(
+        (s) => s.user === user.id && (s.signature_image || s.refused)
+      );
+
+      const shouldFadeOut =
+        (user.isSuperuser && stillEligible.length === 0) ||
+        (!user.isSuperuser && userHasSignedOrRefused);
+
+      if (shouldFadeOut) {
+        setFadingOut(true);
       } else {
-        setSigningAs(stillEligible[0].id);
+        setSigningAs(stillEligible[0]?.id ?? null);
       }
     } catch {
       setError("Error refusing to sign.");
@@ -196,7 +237,29 @@ function QuoteDetailPage({ user }) {
     });
   };
 
-  if (error) return <EmptyState title="Oops!" message={error} />;
+  const handleFlagQuote = async () => {
+    try {
+      await api.post(`/quotes/${quote.id}/flag/`, {}, { 
+        withCredentials: true,
+        headers: { "X-CSRFToken": getCookie("csrftoken") }, 
+      });
+      const updated = { 
+        ...quote,
+        has_flagged: true,
+        is_flagged: true,
+        flag_count: (quote.flag_count ?? 0) + 1,
+        flagged_by_users: [...(quote.flagged_by_users ?? []), {
+          id: user.id,
+          name: user.name || user.username || "Unknown User"
+        }]
+      };
+      setQuote(updated);
+    } catch {
+      setError("Failed to flag quote.");
+    }
+  };
+
+  //if (error) return <EmptyState title="Oops!" message={error} />;
   if (!quote || !user) return null;
 
   const displayDate = quote.date
@@ -209,34 +272,11 @@ function QuoteDetailPage({ user }) {
     return !match || (!match.signature_image && !match.refused);
   });
 
-  const userIsParticipant = quote.participants.some(
-    (p) => String(p.id) === String(user?.id)
-  );
-
-  const userHasSignedOrRefused = quote.signatures.some(
-    (sig) => sig.user === user?.id && (sig.signature_image || sig.refused)
-  );
-
-  const adminHasEligibleUsers =
-    user?.isSuperuser &&
-    quote.participants.some((p) => {
-      const sig = quote.signatures.find((s) => s.user === p.id);
-      return !sig || (!sig.signature_image && !sig.refused);
-    });
-
-  const canSign =
-    user &&
-    quote.approved &&
-    ((userIsParticipant && !userHasSignedOrRefused) || adminHasEligibleUsers);
-
-
-  console.log(quote)
   return (
     <>
       <ErrorBanner message={error} />
       <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
         <VisibilityChip quote={quote} />
-
         <h2 className="text-2xl font-bold text-center mb-2">Quote Details</h2>
 
         <div className="text-center text-sm text-gray-600">
@@ -251,12 +291,12 @@ function QuoteDetailPage({ user }) {
             <div key={idx} className="pl-4 border-l-4 border-blue-400">
               {quote.redacted ? (
                 <p>
-                  <span className="font-semibold">{line.speaker_name}</span>:{" "}
+                  <span className="font-semibold">{line.speaker_name}</span>: {" "}
                   <span className="text-red-600 font-bold">[REDACTED]</span>
                 </p>
               ) : (
                 <p>
-                  <span className="font-semibold">{line.speaker_name}</span>:{" "}
+                  <span className="font-semibold">{line.speaker_name}</span>: {" "}
                   {line.text}
                 </p>
               )}
@@ -290,13 +330,16 @@ function QuoteDetailPage({ user }) {
           ))}
         </div>
 
-        {(canSign || showSignForm) && (
+        {canSign && (
           <div
             className={`mt-10 pt-6 border-t transition-opacity duration-500 ease-in-out ${
               fadingOut ? "opacity-0" : "opacity-100"
             }`}
             onTransitionEnd={() => {
-              if (fadingOut) setShowSignForm(false);
+              if (fadingOut) {
+                setFadingOut(false);
+                setCanSign(false);
+              }
             }}
           >
             <h3 className="text-xl font-semibold mb-2">Sign this Quote</h3>
@@ -376,21 +419,49 @@ function QuoteDetailPage({ user }) {
             <strong>Created at:</strong>{" "}
             {new Date(quote.created_at).toLocaleString()}
           </p>
+
+          {user?.isSuperuser && quote.flag_count > 0 && (
+            <div>
+              <p className=" mb-2 text-sm text-gray-700">
+                <strong>This quote has been flagged by {quote.flag_count} {quote.flag_count === 1 ? "user" : "users"}:</strong>
+              </p>
+              <ul className="list-disc list-inside ml-4 text-gray-600">
+                {quote.flagged_by_users.map((user) => (
+                  <li key={user.id}>{user.name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
-        {user?.isSuperuser && (
-          <div className="flex gap-3 mt-4">
+        {user && (
+          <div className="flex gap-3 mt-4 flex-wrap">
+            {user.isSuperuser && (
+              <>
+                <button
+                  onClick={() => navigate(`/quote/${quote.id}/edit`)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
+                >
+                  Delete
+                </button>
+              </>
+            )}
             <button
-              onClick={() => navigate(`/quote/${quote.id}/edit`)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+              onClick={handleFlagQuote}
+              disabled={quote.has_flagged}
+              className={`px-4 py-2 rounded transition ${
+                quote.has_flagged
+                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                  : "bg-yellow-500 text-white hover:bg-yellow-600"
+              }`}
             >
-              Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
-            >
-              Delete
+              {quote.has_flagged ? "Flagged for Review" : "Petition to Hide"}
             </button>
           </div>
         )}
