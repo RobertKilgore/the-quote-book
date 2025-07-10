@@ -3,23 +3,27 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import SignaturePad from "signature_pad";
 import { confirmAlert } from "react-confirm-alert";
-import ErrorBanner from "../components/ErrorBanner"; // ✅ NEW IMPORT
+import ErrorBanner from "../components/ErrorBanner";
 import EmptyState from "../components/EmptyState";
 import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import VisibilityChip from "../components/VisibilityChip";
 
-
-function QuoteDetailPage({user}) {
-  const [loading, setLoading] = useState(true);
+function QuoteDetailPage({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState(null);
   const [signingAs, setSigningAs] = useState(null);
+  const [showSignForm, setShowSignForm] = useState(true);
+  const [fadingOut, setFadingOut] = useState(false);
+
   const canvasRef = useRef(null);
   const [signaturePad, setSignaturePad] = useState(null);
+
   const { refreshCount } = useSignature();
   const { refreshUnapprovedCount } = useUnapprovedQuotes();
 
@@ -38,9 +42,8 @@ function QuoteDetailPage({user}) {
 
   useEffect(() => {
     if (!user || !quote) return;
-
     if (user.isSuperuser) {
-      const eligible = quote.participants.filter((p) => {
+      const eligible = quote.participants_detail.filter((p) => {
         const match = quote.signatures.find((sig) => sig.user === p.id);
         return !match || (!match.signature_image && !match.refused);
       });
@@ -52,7 +55,6 @@ function QuoteDetailPage({user}) {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-
     const canvas = canvasRef.current;
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
     const context = canvas.getContext("2d");
@@ -71,24 +73,18 @@ function QuoteDetailPage({user}) {
       const minWidth = 0.5 * scaleFactor;
       const maxWidth = 2.0 * scaleFactor;
 
-      pad = new SignaturePad(canvas, {
-        minWidth,
-        maxWidth,
-      });
-
+      pad = new SignaturePad(canvas, { minWidth, maxWidth });
       pad.clear();
       setSignaturePad(pad);
     };
 
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
-
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       if (pad) pad.off?.();
     };
   }, [quote]);
-
 
   const handleSignatureSubmit = async () => {
     if (!signaturePad || signaturePad.isEmpty()) {
@@ -109,7 +105,23 @@ function QuoteDetailPage({user}) {
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
       refreshCount();
-      window.location.reload();
+
+      const res = await api.get(`/api/quotes/${quote.id}/`, {
+        withCredentials: true,
+      });
+      const updatedQuote = res.data;
+      setQuote(updatedQuote);
+
+      const stillEligible = updatedQuote.participants_detail.filter((p) => {
+        const sig = updatedQuote.signatures.find((s) => s.user === p.id);
+        return !sig || (!sig.signature_image && !sig.refused);
+      });
+
+      if (stillEligible.length === 0) {
+        setFadingOut(true); // let onTransitionEnd handle hiding
+      } else {
+        setSigningAs(stillEligible[0].id);
+      }
     } catch {
       setError("Error submitting signature.");
     }
@@ -127,15 +139,29 @@ function QuoteDetailPage({user}) {
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
       refreshCount();
-      window.location.reload();
+
+      const res = await api.get(`/api/quotes/${quote.id}/`, {
+        withCredentials: true,
+      });
+      const updatedQuote = res.data;
+      setQuote(updatedQuote);
+
+      const stillEligible = updatedQuote.participants_detail.filter((p) => {
+        const sig = updatedQuote.signatures.find((s) => s.user === p.id);
+        return !sig || (!sig.signature_image && !sig.refused);
+      });
+
+      if (stillEligible.length === 0) {
+        setFadingOut(true); // let onTransitionEnd handle hiding
+      } else {
+        setSigningAs(stillEligible[0].id);
+      }
     } catch {
       setError("Error refusing to sign.");
     }
   };
 
-  const handleClear = () => {
-    signaturePad?.clear();
-  };
+  const handleClear = () => signaturePad?.clear();
 
   const handleDelete = () => {
     confirmAlert({
@@ -170,13 +196,8 @@ function QuoteDetailPage({user}) {
     });
   };
 
-  //if (loading) return <LoadingPage />;
-
-  if (error) {
-    return  (<EmptyState title="Oops!" message={error}/>)
-  }
-
-  if (!quote || !user) return;
+  if (error) return <EmptyState title="Oops!" message={error} />;
+  if (!quote || !user) return null;
 
   const displayDate = quote.date
     ? new Date(quote.date).toLocaleDateString()
@@ -206,20 +227,19 @@ function QuoteDetailPage({user}) {
   const canSign =
     user &&
     quote.approved &&
-    ((userIsParticipant && !userHasSignedOrRefused) ||
-      adminHasEligibleUsers);
+    ((userIsParticipant && !userHasSignedOrRefused) || adminHasEligibleUsers);
 
   return (
     <>
       <ErrorBanner message={error} />
       <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
-        <VisibilityChip quote={quote}/>
+        <VisibilityChip quote={quote} />
 
         <h2 className="text-2xl font-bold text-center mb-2">Quote Details</h2>
 
         <div className="text-center text-sm text-gray-600">
           <p>
-            <strong>Date:</strong> {displayDate} &nbsp;&nbsp;{" "}
+            <strong>Date:</strong> {displayDate} &nbsp;&nbsp;
             <strong>Time:</strong> {displayTime}
           </p>
         </div>
@@ -243,14 +263,16 @@ function QuoteDetailPage({user}) {
         </div>
 
         <div className="flex flex-wrap gap-3 mt-6">
-          {quote.participant_status?.map((p, idx) => (
+          {quote.participant_status?.map((p) => (
             <div
-              key={idx}
+              key={p.user}
               className="border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50"
             >
               <span className="font-semibold">{p.name}</span>
               {p.refused ? (
-                <span className="text-red-600 font-medium mt-1">Refusal to sign</span>
+                <span className="text-red-600 font-medium mt-1">
+                  Refusal to sign
+                </span>
               ) : p.signature_image ? (
                 <img
                   src={p.signature_image}
@@ -258,14 +280,23 @@ function QuoteDetailPage({user}) {
                   className="h-12 mt-1 max-w-[150px] object-contain"
                 />
               ) : (
-                <span className="text-gray-400 italic mt-1">No signature yet</span>
+                <span className="text-gray-400 italic mt-1">
+                  No signature yet
+                </span>
               )}
             </div>
           ))}
         </div>
 
-        {canSign && (
-          <div className="mt-10 pt-6 border-t">
+        {(canSign || showSignForm) && (
+          <div
+            className={`mt-10 pt-6 border-t transition-opacity duration-500 ease-in-out ${
+              fadingOut ? "opacity-0" : "opacity-100"
+            }`}
+            onTransitionEnd={() => {
+              if (fadingOut) setShowSignForm(false);
+            }}
+          >
             <h3 className="text-xl font-semibold mb-2">Sign this Quote</h3>
             <p className="mb-4 text-gray-600">
               Please sign below or refuse to sign.
@@ -276,11 +307,11 @@ function QuoteDetailPage({user}) {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Sign as:
                 </label>
-                  <select
-                    className="border rounded px-3 py-1 text-sm w-full"
-                    value={signingAs ?? ""}
-                    onChange={(e) => setSigningAs(e.target.value)}
-                  >
+                <select
+                  className="border rounded px-3 py-1 text-sm w-full"
+                  value={signingAs ?? ""}
+                  onChange={(e) => setSigningAs(e.target.value)}
+                >
                   {eligibleSigners.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -300,22 +331,25 @@ function QuoteDetailPage({user}) {
               />
             </div>
 
-            <div className="flex gap-4">
-              <button
-                onClick={handleSignatureSubmit}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Submit Signature
-              </button>
-              <button
-                onClick={handleRefuseSignature}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >
-                Refuse to Sign
-              </button>
+            <div className="flex justify-between items-center flex-wrap gap-4">
+              <div className="flex gap-4">
+                <button
+                  onClick={handleSignatureSubmit}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Submit Signature
+                </button>
+                <button
+                  onClick={handleRefuseSignature}
+                  className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800"
+                >
+                  Refuse to Sign
+                </button>
+              </div>
+
               <button
                 onClick={handleClear}
-                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                className="ml-auto px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
               >
                 Reset
               </button>
@@ -324,34 +358,34 @@ function QuoteDetailPage({user}) {
         )}
 
         <div className="pt-6 border-t mt-6 text-sm text-gray-700 space-y-1">
-          <p>
-            <strong>Approved:</strong> {quote.approved ? "Yes" : "No"}
-          </p>
-          <p>
-            <strong>Created by:</strong> {quote.created_by?.name}
-          </p>
-          <p>
-            <strong>Created at:</strong>{" "}
-            {new Date(quote.created_at).toLocaleString()}
-          </p>
-        </div>
+  <p>
+    <strong>Approved:</strong> {quote.approved ? "Yes" : "No"}
+  </p>
+  <p>
+    <strong>Created by:</strong> {quote.created_by?.name}
+  </p>
+  <p>
+    <strong>Created at:</strong>{" "}
+    {new Date(quote.created_at).toLocaleString()}
+  </p>
+</div>
 
-        {user?.isSuperuser && (
-          <div className="flex gap-3 pt-6">
-            <button
-              onClick={() => navigate(`/quote/${quote.id}/edit`)}
-              className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition"
-            >
-              Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
-            >
-              Delete
-            </button>
-          </div>
-        )}
+{user?.isSuperuser && (
+  <div className="flex gap-3 mt-4">
+    <button
+      onClick={() => navigate(`/quote/${quote.id}/edit`)}
+      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+    >
+      Edit
+    </button>
+    <button
+      onClick={handleDelete}
+      className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition"
+    >
+      Delete
+    </button>
+  </div>
+)}
       </div>
     </>
   );

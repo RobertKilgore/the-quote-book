@@ -4,12 +4,14 @@ import ErrorBanner from "../components/ErrorBanner";
 import EmptyState from "../components/EmptyState";
 import getCookie from "../utils/getCookie";
 import LoadingPage from "./LoadingPage";
+import { useUnapprovedUserCount } from "../context/UnapprovedUserContext";
 
 export default function AdminApprovalPage() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [fadingIds, setFadingIds] = useState([]);
+  const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
 
   const fetchRequests = async () => {
     try {
@@ -46,6 +48,7 @@ export default function AdminApprovalPage() {
           headers: { "X-CSRFToken": getCookie("csrftoken") },
         }
       );
+      refreshUnapprovedUserCount();
       fadeOutThenRemove(id);
     } catch {
       setError("Could not approve account.");
@@ -58,6 +61,7 @@ export default function AdminApprovalPage() {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
+      refreshUnapprovedUserCount();
       fadeOutThenRemove(id);
     } catch {
       setError("Could not reject account.");

@@ -5,9 +5,7 @@ import QuoteChip from "../components/QuoteChip";
 import EmptyState from "../components/EmptyState";
 import LoadingPage from "../pages/LoadingPage";
 
-
-
-export default function UnapprovedQuotesPage({user}) {
+export default function UnapprovedQuotesPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState([]);
   const [error, setError] = useState(null);
@@ -26,9 +24,12 @@ export default function UnapprovedQuotesPage({user}) {
       .finally(() => setLoading(false));
   }, []);
 
-  //if (loading) return <LoadingPage />;
+  const handleRemove = (id) => {
+    setQuotes((prev) => prev.filter((q) => q.id !== id));
+  };
+
   if (error) {
-    return  (<EmptyState title="Oops!" message={error}/>)
+    return (<EmptyState title="Oops!" message={error} />);
   }
 
   return (
@@ -36,10 +37,10 @@ export default function UnapprovedQuotesPage({user}) {
       <h2 className="text-2xl font-bold mb-4">Unapproved Quotes</h2>
       {!loading && (
         quotes.length === 0 ? (
-            <EmptyState
-              title="Nothing to review!"
-              message="No unapproved quotes — looks like everyone’s on the same page!"
-            />
+          <EmptyState
+            title="Nothing to review!"
+            message="No unapproved quotes — looks like everyone’s on the same page!"
+          />
         ) : (
           quotes.map((q) => (
             <QuoteChip
@@ -47,7 +48,9 @@ export default function UnapprovedQuotesPage({user}) {
               quote={q}
               user={user}
               onError={setError}
+              onRemove={() => handleRemove(q.id)}
               showVisibilityIcon={false}
+              showDeleteButton={true}
               showSignButtons={false}
             />
           ))

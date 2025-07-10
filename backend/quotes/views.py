@@ -14,20 +14,28 @@ from django.contrib.auth.models import User
 from .serializers import UserSerializer
 from rest_framework.decorators import api_view, permission_classes, action
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 from django.core.files.base import ContentFile
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAdminUser
 import base64
 from .models import AccountRequest
 from .serializers import AccountRequestSerializer
+
 
 
 class IsApprovedUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and request.user.is_active
 
+class IsSuperUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_superuser)
+
+
 @api_view(['GET'])  # ✅ Required for DRF to set renderer & context
-@permission_classes([IsAuthenticated])
+@permission_classes([IsApprovedUser])
 def test_auth(request):
     user_data = UserSerializer(request.user).data  # serialize user properly
     return Response(user_data)
@@ -36,7 +44,7 @@ def get_csrf(request):
     return JsonResponse({'csrfToken': request.META.get('CSRF_COOKIE', '')})
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsApprovedUser])
 def unapproved_quotes(request):
     if not request.user.is_superuser:
         return Response({'error': 'Forbidden'}, status=403)
@@ -58,7 +66,7 @@ def pending_signatures(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsApprovedUser])
 def unapproved_quotes_count(request):
     if not request.user.is_superuser:
         return Response({'error': 'Forbidden'}, status=403)
@@ -78,6 +86,12 @@ def pending_signatures_count(request):
     pending_quotes = quotes.exclude(id__in=signed_quote_ids)
 
     return Response({'count': pending_quotes.count()})
+
+@api_view(["GET"])
+@permission_classes([IsSuperUser])
+def unapproved_user_count(request):
+    count = AccountRequest.objects.filter(approved=False).count()
+    return Response({"count": count})
 
 
 @api_view(['POST'])

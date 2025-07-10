@@ -5,13 +5,16 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { SignatureProvider } from './context/SignatureContext';
 import { UnapprovedQuoteProvider } from "./context/UnapprovedQuoteContext";
+import { UnapprovedUserProvider } from "./context/UnapprovedUserContext";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <UnapprovedQuoteProvider>
       <SignatureProvider>
-        <App />
+          <UnapprovedUserProvider>
+            <App />
+          </UnapprovedUserProvider>
       </SignatureProvider>
     </UnapprovedQuoteProvider>
   </React.StrictMode>

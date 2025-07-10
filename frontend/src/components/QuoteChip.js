@@ -4,6 +4,7 @@ import VisibilityChip from "../components/VisibilityChip";
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
+import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 
 export default function QuoteChip({
   quote: initialQuote,
@@ -11,13 +12,16 @@ export default function QuoteChip({
   onError,
   showVisibilityIcon = true,
   showSignButtons = true,
-  fadeBackIn = true
+  showDeleteButton = false,
+  fadeBackIn = true,
+  onRemove = null
 }) {
   const navigate = useNavigate();
   const [quote, setQuote] = useState(initialQuote);
   const [fadeIn, setFadeIn] = useState(true);
   const [isRemoved, setIsRemoved] = useState(false);
   const { refreshCount } = useSignature();
+  const { refreshUnapprovedCount } = useUnapprovedQuotes();
 
   const isParticipant = quote.participant_status?.some(p => p.user === user?.id);
   const participantData = quote.participant_status?.find(p => p.user === user?.id);
@@ -40,10 +44,10 @@ export default function QuoteChip({
       });
 
       setFadeIn(false);
-
       setTimeout(() => {
         if (!fadeBackIn) {
           setIsRemoved(true);
+          onRemove?.(); 
         } else {
           api.get(`/api/quotes/${quote.id}/`, { withCredentials: true })
             .then(res => {
@@ -51,11 +55,27 @@ export default function QuoteChip({
               setFadeIn(true);
             });
         }
-
         refreshCount();
       }, 300);
     } catch (error) {
       if (onError) onError("Error refusing to sign. Please try again.");
+    }
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    try {
+      await api.delete(`/api/quotes/${quote.id}/`, {
+        withCredentials: true,
+        headers: { "X-CSRFToken": getCookie("csrftoken") }
+      });
+      setFadeIn(false);
+      setTimeout(() => setIsRemoved(true), 300);
+      onRemove?.();
+      refreshUnapprovedCount();
+      refreshCount();
+    } catch {
+      if (onError) onError("Error deleting quote.");
     }
   };
 
@@ -109,28 +129,41 @@ export default function QuoteChip({
         )}
       </div>
 
-      {(shouldShowSignButton || shouldShowRefuseButton) && (
+      {(shouldShowSignButton || shouldShowRefuseButton || (showDeleteButton && user?.isSuperuser)) && (
         <div
-          className="mt-4 flex flex-wrap gap-3"
+          className="mt-4 w-full flex justify-between items-center"
           onClick={(e) => e.stopPropagation()}
         >
-          {shouldShowSignButton && (
-            <button
-              className="px-4 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-colors duration-200"
-              onClick={() => navigate(`/quote/${quote.id}`)}
-            >
-              Sign
-            </button>
-          )}
+          <div className="flex gap-3">
+            {shouldShowSignButton && (
+              <button
+                className="px-4 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-colors duration-200"
+                onClick={() => navigate(`/quote/${quote.id}`)}
+              >
+                Sign
+              </button>
+            )}
 
-          {shouldShowRefuseButton && (
-            <button
-              className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors duration-200"
-              onClick={handleRefuse}
-            >
-              Refuse to Sign
-            </button>
-          )}
+            {shouldShowRefuseButton && (
+              <button
+                className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors duration-200"
+                onClick={handleRefuse}
+              >
+                Refuse to Sign
+              </button>
+            )}
+          </div>
+
+          <div>
+            {showDeleteButton && user?.isSuperuser && (
+              <button
+                onClick={handleDelete}
+                className="px-4 py-1.5 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-full transition-colors duration-200"
+              >
+                Delete
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
