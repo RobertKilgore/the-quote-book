@@ -150,12 +150,38 @@ export default function AdminApprovalPage() {
                   <p><span className="font-medium">Active:</span> {user.is_active ? "Yes" : "No"}</p>
                   <p><span className="font-medium">Admin:</span> {user.is_superuser ? "Yes" : "No"}</p>
 
-                  <div className="mt-2">
+                  <div className="mt-2 flex flex-col sm:flex-row sm:gap-4">
                     <button
                       onClick={() => confirmDeleteUser(user.id, user.username)}
-                      className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full"
+                      className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full mb-2 sm:mb-0"
                     >
                       Delete User
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        try {
+                          const newStatus = !user.is_active;
+                          await api.patch(`/api/admin/users/${user.id}/`, {
+                            is_active: newStatus
+                          }, {
+                            withCredentials: true,
+                            headers: { "X-CSRFToken": getCookie("csrftoken") },
+                          });
+
+                          // Update local state immediately
+                          setUsers(prev =>
+                            prev.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u)
+                          );
+                        } catch {
+                          setError("Failed to update user status.");
+                        }
+                      }}
+                      className={`px-4 py-1.5 text-sm font-medium text-white ${
+                        user.is_active ? "bg-yellow-500 hover:bg-yellow-600" : "bg-blue-600 hover:bg-blue-700"
+                      } rounded-full`}
+                    >
+                      {user.is_active ? "Deactivate" : "Activate"}
                     </button>
                   </div>
                 </div>

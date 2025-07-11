@@ -11,6 +11,7 @@ router.register(r'lines', QuoteLineViewSet)
 router.register(r'signatures', SignatureViewSet)
 router.register(r'users', UserViewSet)
 router.register(r'account-requests', AccountRequestViewSet, basename='account-requests')
+router.register(r'admin/users', UserViewSet, basename='admin-users')
 
 urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),

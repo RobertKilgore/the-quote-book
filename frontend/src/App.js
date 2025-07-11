@@ -161,14 +161,14 @@ function AppRoutes({ user, loading, setUser }) {
         }
       />
 
-      <Route
+      {/* <Route
         path="/debug-jobs"
         element={
           <AdminRoute user={user} loading={loading}>
             <DebugJobsPage user={user} />
           </AdminRoute>
         }
-      />
+      /> */}
     </Routes>
   );
 }

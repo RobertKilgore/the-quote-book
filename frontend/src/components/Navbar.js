@@ -8,6 +8,7 @@ import { MdOutlineGavel } from "react-icons/md";
 import { FaUserShield } from "react-icons/fa6"; // 👈 NEW: Icon for account requests
 import axios from 'axios';
 import getCookie from "../utils/getCookie";
+import ErrorBanner from "../components/ErrorBanner";
 
 // 🔄 Placeholder for future context
 // You can implement this like the others
@@ -20,7 +21,7 @@ function Navbar({ user, setUser, loading }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isLoginLikePage = location.pathname === "/login" || location.pathname === "/request-account";
-  const [logoutError, setLogoutError] = useState("");
+  const [error, setError] = useState(null);
 
   const handleLogout = async () => {
     try {
@@ -31,11 +32,9 @@ function Navbar({ user, setUser, loading }) {
         },
       });
       setUser(null);
-      setLogoutError("");
       navigate("/login");
     } catch (err) {
-      console.error("Logout failed:", err);
-      setLogoutError("Logout failed. Please try again.");
+      setError("Logout failed. Please try again.");
     }
   };
 
@@ -43,6 +42,7 @@ function Navbar({ user, setUser, loading }) {
 
   if (loading) return null;
   return (
+    <div>
     <div className={isLoginLikePage ? "" : "max-w-4xl mx-auto"}>
       <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white px-4 py-1.5 shadow flex items-center justify-between">
         {isLoginLikePage ? (
@@ -141,13 +141,10 @@ function Navbar({ user, setUser, loading }) {
           </>
         )}
       </nav>
-
-      {logoutError && (
-        <div className="bg-red-100 text-red-700 px-4 py-2 text-sm text-center mt-[48px]">
-          {logoutError}
-        </div>
-      )}
     </div>
+      <ErrorBanner message={error} />
+    </div>
+
   );
 }
 

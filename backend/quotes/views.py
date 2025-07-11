@@ -363,10 +363,18 @@ class QuoteViewSet(viewsets.ModelViewSet):
         return Response(status=204)
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsApprovedUser]
+    permission_classes = [IsSuperUser]  # Only admins can use this viewset
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def partial_update(self, request, *args, **kwargs):
+        user = self.get_object()
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
 
 class SignatureViewSet(viewsets.ModelViewSet):
