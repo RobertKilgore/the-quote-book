@@ -2,6 +2,36 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
+from collections import Counter
+
+
+RARITY_CHOICES = [
+    ('common', 'Common'),
+    ('uncommon', 'Uncommon'),
+    ('rare', 'Rare'),
+    ('epic', 'Epic'),
+    ('legendary', 'Legendary'),
+]
+
+class QuoteRankVote(models.Model):
+    quote = models.ForeignKey("Quote", on_delete=models.CASCADE, related_name="rank_votes")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rarity = models.CharField(max_length=10, choices=RARITY_CHOICES)
+    voted_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('quote', 'user')  # One vote per user per quote
+
+def update_quote_rank(quote):
+    votes = quote.rank_votes.all()
+    tally = Counter(v.rarity for v in votes)
+
+    order = ['common', 'uncommon', 'rare', 'epic', 'legendary']
+    for rank in order:
+        if tally[rank] == max(tally.values(), default=0):
+            quote.rank = rank
+            quote.save(update_fields=['rank'])
+            break
 
 class AccountRequest(models.Model):
     first_name = models.CharField(max_length=150)
@@ -26,6 +56,10 @@ class Quote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     flagged_by = models.ManyToManyField(User, blank=True, related_name="flagged_quotes")
     is_flagged = models.BooleanField(default=False)
+    rank = models.CharField(max_length=10, choices=RARITY_CHOICES, default='common')
+    quote_notes = models.TextField(blank=True, null=True)
+    quote_source = models.URLField(blank=True, null=True)
+    quote_source_image = models.ImageField(upload_to="quote_sources/", blank=True, null=True)
 
     def __str__(self):
         return f"Quote #{self.id} on {self.date} at {self.time}"

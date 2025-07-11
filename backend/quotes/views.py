@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
-from .models import Quote, QuoteLine, Signature
+from .models import Quote, QuoteLine, Signature, QuoteRankVote
 from .serializers import QuoteSerializer, QuoteLineSerializer, SignatureSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
@@ -23,6 +23,8 @@ import base64
 from .models import AccountRequest
 from .serializers import AccountRequestSerializer
 from scheduler.jobs import auto_refuse_stale_quotes
+from .serializers import QuoteRankVoteSerializer
+from .models import update_quote_rank, RARITY_CHOICES
 
 
 
@@ -33,6 +35,38 @@ class IsApprovedUser(permissions.BasePermission):
 class IsSuperUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_superuser)
+
+
+
+@api_view(['POST'])
+@permission_classes([IsApprovedUser])
+def vote_quote_rank(request, quote_id):
+    quote = get_object_or_404(Quote, id=quote_id)
+    rarity = request.data.get("rarity")
+
+
+    if rarity is None:
+        # Remove the user's vote if it exists
+        QuoteRankVote.objects.filter(quote=quote, user=request.user).delete()
+        update_quote_rank(quote)
+        serializer = QuoteSerializer(quote, context={"request": request})
+        return Response(serializer.data)
+    
+    if rarity not in ['common', 'uncommon', 'rare', 'epic', 'legendary']:
+        return Response({"error": "Invalid rarity"}, status=400)
+
+    # Remove existing vote
+    QuoteRankVote.objects.filter(user=request.user, quote=quote).delete()
+
+    # Create new vote
+    QuoteRankVote.objects.create(user=request.user, quote=quote, rarity=rarity)
+
+    # Update rank
+    update_quote_rank(quote)
+
+    # ✅ Return full updated quote
+    serializer = QuoteSerializer(quote, context={"request": request})
+    return Response(serializer.data, status=200)
 
 
 @api_view(['GET'])
@@ -89,7 +123,7 @@ def unapproved_quotes(request):
         return Response({'error': 'Forbidden'}, status=403)
 
     quotes = Quote.objects.filter(approved=False)
-    serializer = QuoteSerializer(quotes, many=True)
+    serializer = QuoteSerializer(quotes, many=True, context={'request': request})
     return Response(serializer.data)
 
 @api_view(['GET'])
@@ -253,6 +287,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         quote = self.get_object()
+        instance = self.get_object()
 
         if not request.user.is_superuser:
             raise PermissionDenied("Only admins can update quotes.")
@@ -265,9 +300,14 @@ class QuoteViewSet(viewsets.ModelViewSet):
         quote.is_flagged = False
         quote.save(update_fields=["is_flagged"])
 
+        # 🔁 Clear rarity votes
+        QuoteRankVote.objects.filter(quote=instance).delete()
+
+        # 🔁 Recalculate rank
+        update_quote_rank(instance)
 
         # ✅ If the update just approved the quote, set approved_at
-        instance = self.get_object()
+
         if instance.approved:
             instance.approved_at = timezone.now()
             instance.save()
@@ -286,6 +326,12 @@ class QuoteViewSet(viewsets.ModelViewSet):
         instance.flagged_by.clear()
         instance.is_flagged = False
         instance.save(update_fields=["is_flagged"])
+
+                # 🔁 Clear rarity votes
+        QuoteRankVote.objects.filter(quote=instance).delete()
+
+        # 🔁 Recalculate rank
+        update_quote_rank(instance)
         # Set approved_at if just approved
         approved_now = self.get_object().approved
         if approved_now:

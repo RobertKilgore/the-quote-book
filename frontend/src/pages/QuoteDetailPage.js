@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { FiX } from "react-icons/fi";
 import api from "../api/axios";
 import SignaturePad from "signature_pad";
 import { confirmAlert } from "react-confirm-alert";
@@ -9,6 +10,50 @@ import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import VisibilityChip from "../components/VisibilityChip";
+import RarityChip from "../components/RarityChip"; 
+
+const rarityColors = {
+  common: "bg-white",
+  uncommon: "bg-green-50",
+  rare: "bg-blue-50",
+  epic: "bg-purple-50",
+  legendary: "bg-yellow-50",
+};
+
+const rarityLabels = ["common", "uncommon", "rare", "epic", "legendary"];
+const rarityColorMap = {
+  common: {
+    text: "text-gray-800",
+    bg: "bg-white",
+    border: "border-gray-300",
+    hover: "hover:bg-gray-100"
+  },
+  uncommon: {
+    text: "text-green-800",
+    bg: "bg-green-100",
+    border: "border-green-300",
+    hover: "hover:bg-green-200"
+  },
+  rare: {
+    text: "text-blue-800",
+    bg: "bg-blue-100",
+    border: "border-blue-300",
+    hover: "hover:bg-blue-200"
+  },
+  epic: {
+    text: "text-purple-800",
+    bg: "bg-purple-100",
+    border: "border-purple-300",
+    hover: "hover:bg-purple-200"
+  },
+  legendary: {
+    text: "text-yellow-900",
+    bg: "bg-yellow-100",
+    border: "border-yellow-300",
+    hover: "hover:bg-yellow-200"
+  }
+};
+
 
 function QuoteDetailPage({ user }) {
   const { id } = useParams();
@@ -259,6 +304,33 @@ function QuoteDetailPage({ user }) {
     }
   };
 
+  
+  const handleVote = async (rarity) => {
+    try {
+      const res = await api.post(`/quotes/${quote.id}/vote/`, { rarity }, {
+        withCredentials: true,
+        headers: { "X-CSRFToken": getCookie("csrftoken") },
+      });
+      setQuote(res.data);
+    } catch {
+      setError("Failed to register vote.");
+    }
+  };
+
+  const clearVote = async () => {
+  try {
+    const res = await api.post(`/quotes/${quote.id}/vote/`, { rarity: null }, {
+      withCredentials: true,
+      headers: { "X-CSRFToken": getCookie("csrftoken") },
+    });
+    setQuote(res.data); // assumes backend returns full updated quote
+  } catch {
+    setError("Failed to clear vote.");
+  }
+};
+
+  const currentVote = quote?.user_vote;
+
   //if (error) return <EmptyState title="Oops!" message={error} />;
   if (!quote || !user) return null;
 
@@ -272,17 +344,20 @@ function QuoteDetailPage({ user }) {
     return !match || (!match.signature_image && !match.refused);
   });
 
+
   return (
-    <>
+        <>
       <ErrorBanner message={error} />
-      <div className="relative max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg space-y-6">
+      <div className={`max-w-4xl mx-auto mt-10 p-6 rounded-xl shadow-lg space-y-6 transition-all duration-300 ${rarityColors[quote?.rank] || "bg-white"}`}>
+        {quote && <RarityChip rarity={quote.rank} size='large'/>}
+
         <VisibilityChip quote={quote} />
         <h2 className="text-2xl font-bold text-center mb-2">Quote Details</h2>
 
         <div className="text-center text-sm text-gray-600">
           <p>
-            <strong>Date:</strong> {displayDate} &nbsp;&nbsp;
-            <strong>Time:</strong> {displayTime}
+            <strong>Date:</strong> {quote.date || "Unknown"} &nbsp;&nbsp;
+            <strong>Time:</strong> {quote.time || "Unknown"}
           </p>
         </div>
 
@@ -291,13 +366,12 @@ function QuoteDetailPage({ user }) {
             <div key={idx} className="pl-4 border-l-4 border-blue-400">
               {quote.redacted ? (
                 <p>
-                  <span className="font-semibold">{line.speaker_name}</span>: {" "}
+                  <span className="font-semibold">{line.speaker_name}</span>:{" "}
                   <span className="text-red-600 font-bold">[REDACTED]</span>
                 </p>
               ) : (
                 <p>
-                  <span className="font-semibold">{line.speaker_name}</span>: {" "}
-                  {line.text}
+                  <span className="font-semibold">{line.speaker_name}</span>: {line.text}
                 </p>
               )}
             </div>
@@ -312,9 +386,7 @@ function QuoteDetailPage({ user }) {
             >
               <span className="font-semibold">{p.name}</span>
               {p.refused ? (
-                <span className="text-red-600 font-medium mt-1">
-                  Refusal to sign
-                </span>
+                <span className="text-red-600 font-medium mt-1">Refusal to sign</span>
               ) : p.signature_image ? (
                 <img
                   src={p.signature_image}
@@ -322,12 +394,49 @@ function QuoteDetailPage({ user }) {
                   className="h-12 mt-1 max-w-[150px] object-contain"
                 />
               ) : (
-                <span className="text-gray-400 italic mt-1">
-                  No signature yet
-                </span>
+                <span className="text-gray-400 italic mt-1">No signature yet</span>
               )}
             </div>
           ))}
+        </div>
+
+        {/* 🌟 Rarity Voting Section */}
+        <div className="mt-6 pt-4 border-t">
+          <h3 className="text-lg font-semibold mb-3">Vote on Quote Rarity</h3>
+            <div className="flex gap-3 flex-wrap">
+              {rarityLabels.map((rarity) => {
+                const isSelected = currentVote === rarity;
+                const color = rarityColorMap[rarity];
+
+                return (
+                  <button
+                    key={rarity}
+                    onClick={() => handleVote(rarity)}
+                    className={`relative px-4 py-2 rounded-full border transition-all duration-200 
+                      ${isSelected ? "ring-2 ring-black" : ""}
+                      ${color.bg} ${color.text} ${color.border} ${color.hover}
+                    `}
+                    title={
+                      quote.rank_votes?.[rarity]?.length
+                        ? quote.rank_votes[rarity].map((u) => u.name).join(", ")
+                        : "No votes yet"
+                    }
+                  >
+                    {rarity.charAt(0).toUpperCase() + rarity.slice(1)}{" "}
+                    ({quote.rank_votes?.[rarity]?.length || 0})
+                  </button>
+                );
+              })}
+                {/* Clear Vote Button */}
+                <button
+                  onClick={clearVote}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-700 border border-red-300 hover:bg-red-200 transition"
+                  title="Remove your vote"
+                >
+                  <FiX className="w-5 h-5" />
+                  {/* <span className="hidden sm:inline">Clear Vote</span> */}
+                </button>
+            </div>
         </div>
 
         {canSign && (

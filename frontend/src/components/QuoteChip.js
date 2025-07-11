@@ -1,10 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import VisibilityChip from "../components/VisibilityChip";
+import RarityChip from "../components/RarityChip"; 
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
+
+const rarityColorMap = {
+  common: "bg-white",
+  uncommon: "bg-green-50",
+  rare: "bg-blue-50",
+  epic: "bg-purple-50",
+  legendary: "bg-yellow-50",
+};
 
 export default function QuoteChip({
   quote: initialQuote,
@@ -13,6 +22,7 @@ export default function QuoteChip({
   showVisibilityIcon = true,
   showSignButtons = true,
   showDeleteButton = false,
+  showRarity = true,
   fadeBackIn = true,
   onRemove = null
 }) {
@@ -33,6 +43,8 @@ export default function QuoteChip({
 
   const shouldShowSignButton = showSignButtons && (needsSignature || (user?.isSuperuser && hasUnsignedParticipant));
   const shouldShowRefuseButton = showSignButtons && needsSignature;
+
+  const userHasVoted = quote.rarity_votes?.some(v => v.user === user?.id);
 
   const handleRefuse = async () => {
     try {
@@ -81,11 +93,20 @@ export default function QuoteChip({
 
   if (isRemoved) return null;
 
+  const rarity = quote.rank || "common";
+  const bgColorClass = showRarity ? rarityColorMap[rarity] : "bg-white";
+
   return (
     <div
-      className={`relative bg-white p-4 pr-12 shadow rounded hover:bg-gray-50 transition cursor-pointer duration-300 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}
+      className={`relative ${bgColorClass} p-4 pr-12 shadow rounded hover:brightness-95 transition cursor-pointer duration-300 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}
       onClick={() => navigate(`/quote/${quote.id}`)}
     >
+      {showRarity && (
+        <div className="mb-2">
+          <RarityChip rarity={rarity} />
+        </div>
+      )}
+
       {showVisibilityIcon && <VisibilityChip quote={quote} />}
 
       {quote.lines.map((line) => (

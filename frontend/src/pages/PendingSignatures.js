@@ -54,6 +54,7 @@ export default function PendingSignaturesPage({ user }) {
             user={user}
             onError={setError}
             showVisibilityIcon={true}
+            showRarity={false}
             showSignButtons={true}
             fadeBackIn={false}
             onRemove={() => handleLocalRemove(q.id)} // <-- optional

@@ -51,6 +51,7 @@ export default function UnapprovedQuotesPage({ user }) {
               onRemove={() => handleRemove(q.id)}
               showVisibilityIcon={false}
               showDeleteButton={true}
+              showRarity={false}
               showSignButtons={false}
             />
           ))
