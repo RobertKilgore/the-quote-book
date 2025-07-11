@@ -12,6 +12,7 @@ import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import VisibilityChip from "../components/VisibilityChip";
 import RarityChip from "../components/RarityChip"; 
 
+
 const rarityColors = {
   common: "bg-white",
   uncommon: "bg-green-50",
@@ -71,6 +72,7 @@ function QuoteDetailPage({ user }) {
 
   const { refreshCount } = useSignature();
   const { refreshUnapprovedCount } = useUnapprovedQuotes();
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     if (user && id) {
@@ -377,7 +379,48 @@ function QuoteDetailPage({ user }) {
             </div>
           ))}
         </div>
+        {/* 📝 Quote Notes & Source Info */}
+        {(quote.quote_notes || quote.quote_source || quote.quote_source_image) && (
+          <div className="">
+            <div className="space-y-4 text-sm text-gray-800">
 
+              {quote.quote_notes && (
+                <div className="bg-gray-50 p-4 rounded border">
+                  <p className="font-medium text-gray-600 mb-1">Notes</p>
+                  <p className="whitespace-pre-wrap">{quote.quote_notes}</p>
+                </div>
+              )}
+
+              {(quote.quote_source || quote.quote_source_image) && (
+                <div className="bg-gray-50 p-4 rounded border">
+                  <p className="font-medium text-gray-600 mb-1">Source</p>
+                  <div className="space-y-2">
+                    {quote.quote_source && (
+                      <p>
+                        <a
+                          href={quote.quote_source}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline hover:text-blue-800 break-words"
+                        >
+                          {quote.quote_source}
+                        </a>
+                      </p>
+                    )}
+                    {quote.quote_source_image && (
+                      <img
+                        src={quote.quote_source_image}
+                        alt="Quote Source"
+                        className="max-h-64 rounded border object-contain mx-auto shadow cursor-pointer hover:opacity-80 transition"
+                        onClick={() => setShowImageModal(true)}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap gap-3 mt-6">
           {quote.participant_status?.map((p) => (
             <div
@@ -397,8 +440,10 @@ function QuoteDetailPage({ user }) {
                 <span className="text-gray-400 italic mt-1">No signature yet</span>
               )}
             </div>
+            
           ))}
         </div>
+      
 
         {/* 🌟 Rarity Voting Section */}
         <div className="mt-6 pt-4 border-t">
@@ -491,7 +536,7 @@ function QuoteDetailPage({ user }) {
                   onClick={handleSignatureSubmit}
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                  Submit Signature
+                  Submit
                 </button>
                 <button
                   onClick={handleRefuseSignature}
@@ -574,9 +619,23 @@ function QuoteDetailPage({ user }) {
             </button>
           </div>
         )}
+          {showImageModal && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
+              onClick={() => setShowImageModal(false)}
+            >
+              <img
+                src={quote.quote_source_image}
+                alt="Full Quote Source"
+                className="max-h-[90vh] max-w-[90vw] rounded shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
       </div>
     </>
   );
+
 }
 
 export default QuoteDetailPage;

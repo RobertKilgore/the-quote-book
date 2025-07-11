@@ -293,7 +293,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Only admins can update quotes.")
 
         response = super().update(request, *args, **kwargs)
-
+        instance.refresh_from_db()
 
         # Clear all flags
         quote.flagged_by.clear()
@@ -310,6 +310,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
         if instance.approved:
             instance.approved_at = timezone.now()
+            print("update  view", instance.quote_source_image)
             instance.save()
 
         return response
@@ -320,7 +321,8 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
         instance = self.get_object()
         response = super().partial_update(request, *args, **kwargs)
-
+        
+        
 
         # Clear all flags
         instance.flagged_by.clear()
