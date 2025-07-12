@@ -68,6 +68,7 @@ export default function AdminApprovalPage() {
       );
       refreshUnapprovedUserCount();
       fadeOutThenRemove(id);
+      await fetchUsers(); 
     } catch {
       setError("Could not approve account.");
     }

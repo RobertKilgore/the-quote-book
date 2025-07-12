@@ -606,17 +606,19 @@ function QuoteDetailPage({ user }) {
                 </button>
               </>
             )}
-            <button
-              onClick={handleFlagQuote}
-              disabled={quote.has_flagged}
-              className={`px-4 py-2 rounded transition ${
-                quote.has_flagged
-                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                  : "bg-yellow-500 text-white hover:bg-yellow-600"
-              }`}
-            >
-              {quote.has_flagged ? "Flagged for Review" : "Petition to Hide"}
-            </button>
+            {quote.visible && (
+              <button
+                onClick={handleFlagQuote}
+                disabled={quote.has_flagged}
+                className={`px-4 py-2 rounded transition ${
+                  quote.has_flagged
+                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    : "bg-yellow-500 text-white hover:bg-yellow-600"
+                }`}
+              >
+                {quote.has_flagged ? "Flagged for Review" : "Petition to Hide"}
+              </button>
+            )}
           </div>
         )}
           {showImageModal && (

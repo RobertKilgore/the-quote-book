@@ -23,12 +23,14 @@ import useScrollRestoration from "./hooks/useScrollRestoration";
 
 import { useSignature } from "./context/SignatureContext";
 import { useUnapprovedQuotes } from "./context/UnapprovedQuoteContext";
+import { useUnapprovedUserCount } from "./context/UnapprovedUserContext";
 
 import "react-confirm-alert/src/react-confirm-alert.css";
 
 function App() {
   const { refreshCount } = useSignature();
   const { refreshUnapprovedCount } = useUnapprovedQuotes();
+  const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +55,10 @@ function App() {
   useEffect(() => {
     if (user) {
       refreshCount(); // from useSignature
-      refreshUnapprovedCount(); // from useUnapprovedQuotes
+    }
+    if (user?.isSuperuser){
+      refreshUnapprovedCount(); 
+      refreshUnapprovedUserCount();
     }
   }, [user]);
 
