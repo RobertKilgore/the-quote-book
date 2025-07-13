@@ -24,8 +24,10 @@ import useScrollRestoration from "./hooks/useScrollRestoration";
 import { useSignature } from "./context/SignatureContext";
 import { useUnapprovedQuotes } from "./context/UnapprovedQuoteContext";
 import { useUnapprovedUserCount } from "./context/UnapprovedUserContext";
+import { NavbarProvider } from "./context/NavbarContext";
 
 import "react-confirm-alert/src/react-confirm-alert.css";
+
 
 function App() {
   const { refreshCount } = useSignature();
@@ -33,6 +35,7 @@ function App() {
   const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
 
   // Scroll restoration is now inside the Router context
   //useScrollRestoration();

@@ -107,7 +107,11 @@ export default function QuoteChip({
         </div>
       )}
 
-      {showVisibilityIcon && <VisibilityChip quote={quote} />}
+{showVisibilityIcon && (
+  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+    <VisibilityChip quote={quote} />
+  </div>
+)}
 
       {quote.lines.map((line) => (
         <div key={line.id || `${line.speaker_name}-${line.text}`} className="mb-1">

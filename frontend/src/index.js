@@ -6,6 +6,7 @@ import reportWebVitals from './reportWebVitals';
 import { SignatureProvider } from './context/SignatureContext';
 import { UnapprovedQuoteProvider } from "./context/UnapprovedQuoteContext";
 import { UnapprovedUserProvider } from "./context/UnapprovedUserContext";
+import { NavbarProvider } from "./context/NavbarContext";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -13,7 +14,9 @@ root.render(
     <UnapprovedQuoteProvider>
       <SignatureProvider>
           <UnapprovedUserProvider>
-            <App />
+            <NavbarProvider>
+              <App />
+            </NavbarProvider>
           </UnapprovedUserProvider>
       </SignatureProvider>
     </UnapprovedQuoteProvider>

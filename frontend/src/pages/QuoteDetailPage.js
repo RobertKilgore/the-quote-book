@@ -27,31 +27,36 @@ const rarityColorMap = {
     text: "text-gray-800",
     bg: "bg-white",
     border: "border-gray-300",
-    hover: "hover:bg-gray-100"
+    hover: "hover:bg-gray-100",
+    ring: "ring-gray-300"
   },
   uncommon: {
     text: "text-green-800",
     bg: "bg-green-100",
     border: "border-green-300",
-    hover: "hover:bg-green-200"
+    hover: "hover:bg-green-200",
+    ring: "ring-green-300"
   },
   rare: {
     text: "text-blue-800",
     bg: "bg-blue-100",
     border: "border-blue-300",
-    hover: "hover:bg-blue-200"
+    hover: "hover:bg-blue-200",
+    ring: "ring-blue-300"
   },
   epic: {
     text: "text-purple-800",
     bg: "bg-purple-100",
     border: "border-purple-300",
-    hover: "hover:bg-purple-200"
+    hover: "hover:bg-purple-200",
+    ring: "ring-purple-300"
   },
   legendary: {
     text: "text-yellow-900",
     bg: "bg-yellow-100",
     border: "border-yellow-300",
-    hover: "hover:bg-yellow-200"
+    hover: "hover:bg-yellow-200",
+    ring: "ring-yellow-300"
   }
 };
 
@@ -308,8 +313,12 @@ function QuoteDetailPage({ user }) {
 
   
   const handleVote = async (rarity) => {
+    const isClearing = (currentVote === rarity);
+    console.log(currentVote)
     try {
-      const res = await api.post(`/quotes/${quote.id}/vote/`, { rarity }, {
+      const res = await api.post(`/quotes/${quote.id}/vote/`, {
+        rarity: isClearing ? null : rarity
+      }, {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
@@ -319,27 +328,24 @@ function QuoteDetailPage({ user }) {
     }
   };
 
-  const clearVote = async () => {
-  try {
-    const res = await api.post(`/quotes/${quote.id}/vote/`, { rarity: null }, {
-      withCredentials: true,
-      headers: { "X-CSRFToken": getCookie("csrftoken") },
-    });
-    setQuote(res.data); // assumes backend returns full updated quote
-  } catch {
-    setError("Failed to clear vote.");
+  function formatTimeTo12Hour(timeStr) {
+    if (!timeStr) return null;
+    const [hourStr, minuteStr] = timeStr.split(":");
+    let hour = parseInt(hourStr);
+    const minute = minuteStr;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12; // convert 0 → 12
+    return `${hour}:${minute} ${ampm}`;
   }
-};
 
-  const currentVote = quote?.user_vote;
+  const currentVote = quote?.user_rarity_vote;
+
 
   //if (error) return <EmptyState title="Oops!" message={error} />;
   if (!quote || !user) return null;
 
-  const displayDate = quote.date
-    ? new Date(quote.date).toLocaleDateString()
-    : "Unknown";
-  const displayTime = quote.time || "Unknown";
+
+  const displayTime = formatTimeTo12Hour(quote.time);
 
   const eligibleSigners = quote.participants_detail.filter((p) => {
     const match = quote.signatures.find((sig) => sig.user === p.id);
@@ -351,16 +357,32 @@ function QuoteDetailPage({ user }) {
         <>
       <ErrorBanner message={error} />
       <div className={`max-w-4xl mx-auto mt-10 p-6 rounded-xl shadow-lg space-y-6 transition-all duration-300 ${rarityColors[quote?.rank] || "bg-white"}`}>
-        {quote && <RarityChip rarity={quote.rank} size='large'/>}
-
-        <VisibilityChip quote={quote} />
+        <div className="relative">
+          <RarityChip rarity={quote.rank} size="large" />
+          <div className="absolute top-1 right-2 z-10">
+            <VisibilityChip quote={quote} />
+          </div>
+        </div>
         <h2 className="text-2xl font-bold text-center mb-2">Quote Details</h2>
 
+        
         <div className="text-center text-sm text-gray-600">
-          <p>
-            <strong>Date:</strong> {quote.date || "Unknown"} &nbsp;&nbsp;
-            <strong>Time:</strong> {quote.time || "Unknown"}
-          </p>
+          {quote.date ? (
+            new Date(quote.date) < new Date("1980-06-09") ? (
+              <p>
+                <strong>Date:</strong> Ancient History
+              </p>
+            ) : (
+              <p>
+                <strong>Date:</strong> {new Date(quote.date).toLocaleDateString()} &nbsp;&nbsp;
+                <strong>Time:</strong> {displayTime || "Unknown"}
+              </p>
+            )
+          ) : (
+            <p>
+              <strong>Date:</strong> Unknown
+            </p>
+          )}
         </div>
 
         <div className="space-y-2 mt-6">
@@ -446,42 +468,33 @@ function QuoteDetailPage({ user }) {
       
 
         {/* 🌟 Rarity Voting Section */}
-        <div className="mt-6 pt-4 border-t">
-          <h3 className="text-lg font-semibold mb-3">Vote on Quote Rarity</h3>
-            <div className="flex gap-3 flex-wrap">
-              {rarityLabels.map((rarity) => {
-                const isSelected = currentVote === rarity;
-                const color = rarityColorMap[rarity];
+        <div className="mt-6 pt-6 border-t">
+          <div className="flex justify-center gap-3 flex-wrap">
+            {rarityLabels.map((rarity) => {
+              const isSelected = currentVote === rarity;
+              const color = rarityColorMap[rarity];
+              const count = quote.rank_votes?.[rarity]?.length || 0;
 
-                return (
+              return (
+                <div key={rarity} className="relative">
                   <button
-                    key={rarity}
                     onClick={() => handleVote(rarity)}
-                    className={`relative px-4 py-2 rounded-full border transition-all duration-200 
-                      ${isSelected ? "ring-2 ring-black" : ""}
+                    className={`w-[7.5rem] text-center px-4 py-2 rounded-full border transition-all
+                      ${isSelected ? `ring-2 ring-offset-2 ${color.ring} font-bold scale-105 shadow-md` : ""}
                       ${color.bg} ${color.text} ${color.border} ${color.hover}
                     `}
-                    title={
-                      quote.rank_votes?.[rarity]?.length
-                        ? quote.rank_votes[rarity].map((u) => u.name).join(", ")
-                        : "No votes yet"
-                    }
                   >
-                    {rarity.charAt(0).toUpperCase() + rarity.slice(1)}{" "}
-                    ({quote.rank_votes?.[rarity]?.length || 0})
+                    {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
                   </button>
-                );
-              })}
-                {/* Clear Vote Button */}
-                <button
-                  onClick={clearVote}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-700 border border-red-300 hover:bg-red-200 transition"
-                  title="Remove your vote"
-                >
-                  <FiX className="w-5 h-5" />
-                  {/* <span className="hidden sm:inline">Clear Vote</span> */}
-                </button>
-            </div>
+
+                  {/* Chip badge */}
+                  <span className="absolute -top-2 -right-2 bg-gray-700 text-white text-xs px-2 py-0.5 rounded-full shadow">
+                    {count}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {canSign && (
@@ -556,23 +569,29 @@ function QuoteDetailPage({ user }) {
           </div>
         )}
 
-        <div className="pt-6 border-t mt-6 text-sm text-gray-700 space-y-1">
-          <p>
-            <strong>Approved:</strong> {quote.approved ? "Yes" : "No"}
-          </p>
-          {quote.approved && quote.approved_at && (
-            <p>
-              <strong>Approved at:</strong>{" "}
-              {new Date(quote.approved_at).toLocaleString()}
-            </p>
+        <div className="pt-0 border-t mt-6 text-sm text-gray-700 space-y-1">
+
+          {user?.isSuperuser && (
+            <div className="pt-6">
+              <p>
+                <strong>Approved:</strong> {quote.approved ? "Yes" : "No"}
+              </p>
+              {quote.approved && quote.approved_at && (
+                <p>
+                  <strong>Approved at:</strong>{" "}
+                  {new Date(quote.approved_at).toLocaleString()}
+                </p>
+              )}
+              <p>
+                <strong>Created by:</strong> {quote.created_by?.name}
+              </p>
+              <p>
+                <strong>Created at:</strong>{" "}
+                {new Date(quote.created_at).toLocaleString()}
+              </p>
+            </div>
           )}
-          <p>
-            <strong>Created by:</strong> {quote.created_by?.name}
-          </p>
-          <p>
-            <strong>Created at:</strong>{" "}
-            {new Date(quote.created_at).toLocaleString()}
-          </p>
+          
 
           {user?.isSuperuser && quote.flag_count > 0 && (
             <div>

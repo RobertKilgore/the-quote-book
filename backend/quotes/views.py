@@ -343,7 +343,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
         return response
     
     def list(self, request, *args, **kwargs):
-        print("📌 Logged in user:", request.user)
+        # print("📌 Logged in user:", request.user)
         return super().list(request, *args, **kwargs)
     
     def get_object(self):
