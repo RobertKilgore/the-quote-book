@@ -1,39 +1,36 @@
-import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
-export default function useScrollRestoration() {
+export default function useScrollRestoration(key, loading) {
   const location = useLocation();
-  const lastScrollY = useRef(0);
-  const key = `scroll-position:${location.pathname}`;
 
-  // 🔁 Update scroll position on scroll (with throttling)
+  // Restore scroll when content is ready
+  useEffect(() => {
+    if (loading) return;
+
+    const y = sessionStorage.getItem(`scroll-${key}`);
+    if (y !== null) {
+      var scrollPos = parseInt(y, 10)
+      requestAnimationFrame(() => {
+        if (scrollPos < 5) {
+          window.scrollTo(0, 0);
+        } else {
+          window.scrollTo(0, scrollPos);
+        }
+        
+      });
+    }
+  }, [key, loading]);
+
+  // Save on scroll if scrollY > 0
   useEffect(() => {
     const handleScroll = () => {
-      lastScrollY.current = window.scrollY;
+      if (window.scrollY > 0) {
+        sessionStorage.setItem(`scroll-${key}`, window.scrollY);
+      }
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
-  // 🧠 Save scroll position BEFORE route changes away from this page
-  const previousPath = useRef(location.pathname);
-  useEffect(() => {
-    const prevKey = `scroll-position:${previousPath.current}`;
-    sessionStorage.setItem(prevKey, lastScrollY.current.toString());
-    console.log(`[ScrollRestore] Saved scroll for ${previousPath.current}:`, lastScrollY.current);
-
-    previousPath.current = location.pathname; // Update to new path
-  }, [location.pathname]);
-
-  // 🧯 Restore scroll when entering this route
-  useEffect(() => {
-    const saved = sessionStorage.getItem(key);
-    console.log(`[ScrollRestore] Attempting to restore for ${location.pathname}:`, saved);
-    if (saved !== null) {
-      setTimeout(() => {
-        console.log(`[ScrollRestore] Restoring scroll to ${saved}`);
-        window.scrollTo(0, parseInt(saved, 10));
-      }, 500);
-    }
-  }, [location.pathname]);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [key, location.pathname]);
 }

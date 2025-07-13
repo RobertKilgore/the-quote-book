@@ -9,13 +9,15 @@ import useScrollRestoration from "../hooks/useScrollRestoration";
 import { useNavbar } from "../context/NavbarContext";
 
 export default function HomePage({user}) {
+  
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState([]);
   const [error, setError] = useState(null);
+  //const [saveScroll, setSaveScroll] = useState(true)
   const { collapsed } = useNavbar();
   const navigate = useNavigate();
 
-
+  useScrollRestoration("home", loading);
 
   useEffect(() => {
     api.get("/api/quotes/", { withCredentials: true })
@@ -31,8 +33,6 @@ export default function HomePage({user}) {
 
 
 
-  //useScrollRestoration();
-  //if (loading) return <LoadingPage />;
   if (error) {
     return  (<EmptyState title="Oops!" message={error}/>)
   }
@@ -61,9 +61,9 @@ export default function HomePage({user}) {
 
       {user && (
         <button
-          onClick={() =>
-            navigate(user.isSuperuser ? "/create-quote" : "/request-quote")
-          }
+          onClick={() => {
+            navigate(user.isSuperuser ? "/create-quote" : "/request-quote");
+          }}
           className={`fixed ${
             collapsed ? "bottom-[6rem]" : "bottom-6"
           } right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center`}

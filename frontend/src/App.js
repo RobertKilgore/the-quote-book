@@ -19,7 +19,6 @@ import DebugJobsPage from "./pages/DebugJobsPage";
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
 import PrivateRoute from "./components/PrivateRoute";
-import useScrollRestoration from "./hooks/useScrollRestoration";
 
 import { useSignature } from "./context/SignatureContext";
 import { useUnapprovedQuotes } from "./context/UnapprovedQuoteContext";
@@ -35,10 +34,6 @@ function App() {
   const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-
-  // Scroll restoration is now inside the Router context
-  //useScrollRestoration();
 
   useEffect(() => {
     axios.get("http://127.0.0.1:8000/api/test-auth/", { withCredentials: true })
