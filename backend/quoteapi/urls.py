@@ -27,6 +27,10 @@ def set_csrf_cookie(request):
     return JsonResponse({"detail": "CSRF cookie set"})
 
 urlpatterns = [
+    path("quotes/unrated/count/", views.unrated_quotes_count),
+    path("quotes/flagged/count/", views.flagged_quotes_count),
+    path("quotes/unrated/", views.list_unrated_quotes, name="list-unrated-quotes"),
+    path("quotes/flagged/", views.list_flagged_quotes, name="list-flagged-quotes"),
     path('quotes/<int:quote_id>/vote/', views.vote_quote_rank, name='vote-quote-rank'),
     path("admin/users/", views.list_users),
     path("admin/users/<int:user_id>/", views.delete_user),

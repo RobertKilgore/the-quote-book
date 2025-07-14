@@ -8,6 +8,8 @@ export default function NavButtons({
   pendingCount,
   unapprovedCount,
   unapprovedUserCount,
+  unratedQuoteCount,
+  flaggedQuoteCount,
   layout = "row", // "row" (top) | "bar" (bottom)
 }) {
   const isBar = layout === "bar";
@@ -29,7 +31,7 @@ export default function NavButtons({
       <Link to="/signatures/pending" className={buttonClass}>
         <FaPenFancy size={isBar ? 24 : 20} title="Signatures Needed" />
         {pendingCount > 0 && (
-          <span className="absolute -top-0 -right-0 bg-red-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+          <span className="absolute -top-0 -right-0 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
             {pendingCount}
           </span>
         )}
@@ -45,7 +47,7 @@ export default function NavButtons({
           title={isAdmin ? "Unapproved Quotes" : "Your Unapproved Submissions"}
         />
         {isAdmin && unapprovedCount > 0 && (
-          <span className="absolute -top-0 right-1 bg-yellow-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+          <span className="absolute -top-0 right-1 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
             {unapprovedCount}
           </span>
         )}
@@ -54,12 +56,22 @@ export default function NavButtons({
       {/* Unrated Quotes */}
       <Link to="/quotes/unrated" className={buttonClass}>
         <FaStarHalfAlt size={isBar ? 24 : 20} title="Unrated Quotes" />
+        {unratedQuoteCount > 0 && (
+          <span className="absolute -top-0 -right-0 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+            {unratedQuoteCount}
+          </span>
+        )}
       </Link>
 
       {/* Flagged Quotes (Admin only) */}
       {isAdmin && (
         <Link to="/quotes/flagged" className={buttonClass}>
           <FaFlag size={isBar ? 22 : 18} title="Flagged Quotes" />
+          {flaggedQuoteCount > 0 && (
+            <span className="absolute -top-0 -right-0 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
+              {flaggedQuoteCount}
+            </span>
+          )}
         </Link>
       )}
 
@@ -68,7 +80,7 @@ export default function NavButtons({
         <Link to="/account-requests" className={buttonClass}>
           <FaUserShield size={isBar ? 22 : 18} title="Pending User Requests" />
           {unapprovedUserCount > 0 && (
-            <span className="absolute -top-0 -right-0 bg-green-600 text-white text-xs font-bold px-1 py-0 rounded-full">
+            <span className="absolute -top-0 -right-0 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
               {unapprovedUserCount}
             </span>
           )}

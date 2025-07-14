@@ -5,6 +5,7 @@ import api from "../api/axios";
 import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
+import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
 
 export default function QuoteFormBox({
   title = "New Quote",
@@ -34,6 +35,7 @@ export default function QuoteFormBox({
   const [newImage, setNewImage] = useState(null);                  // for uploading new image
   const [removeImage, setRemoveImage] = useState(false);           // if user clicks "Remove"
   const [showImageModal, setShowImageModal] = useState(false);
+  const refreshAll = useRefreshAllQuoteContexts();
   
 
 
@@ -104,36 +106,36 @@ export default function QuoteFormBox({
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  onError(null);
+    e.preventDefault();
+    onError(null);
 
-  const processedLines = lines
-    .map((line) => ({
-      speaker_name: line.speaker_name?.trim(),
-      text: line.text?.trim(),
-      user_id: line.userId ? parseInt(line.userId) : null,
-    }))
-    .filter((line) => line.speaker_name && line.text); // ⬅️ Ensures valid input only
+    const processedLines = lines
+      .map((line) => ({
+        speaker_name: line.speaker_name?.trim(),
+        text: line.text?.trim(),
+        user_id: line.userId ? parseInt(line.userId) : null,
+      }))
+      .filter((line) => line.speaker_name && line.text); // ⬅️ Ensures valid input only
 
-  const participantIds = processedLines
-    .map((line) => line.user_id)
-    .filter((id) => id !== null);
+    const participantIds = processedLines
+      .map((line) => line.user_id)
+      .filter((id) => id !== null);
 
-  const formData = new FormData();
-  formData.append("date", date || "");
-  formData.append("time", time || "");
-  formData.append("visible", visible);
-  formData.append("approved", approved);
-  formData.append("redacted", redacted);
-  formData.append("lines", JSON.stringify(processedLines));
-  formData.append("participants", JSON.stringify(participantIds));
-  if (quoteNotes) formData.append("quote_notes", quoteNotes);
-  if (quoteSource) formData.append("quote_source", quoteSource);
-  if (newImage) {
-    formData.append("quote_source_image", newImage);
-  } else if (removeImage) {
-    formData.append("quote_source_image", ""); // Signals backend to clear it
-  }
+    const formData = new FormData();
+    formData.append("date", date || "");
+    formData.append("time", time || "");
+    formData.append("visible", visible);
+    formData.append("approved", approved);
+    formData.append("redacted", redacted);
+    formData.append("lines", JSON.stringify(processedLines));
+    formData.append("participants", JSON.stringify(participantIds));
+    if (quoteNotes) formData.append("quote_notes", quoteNotes);
+    if (quoteSource) formData.append("quote_source", quoteSource);
+    if (newImage) {
+      formData.append("quote_source_image", newImage);
+    } else if (removeImage) {
+      formData.append("quote_source_image", ""); // Signals backend to clear it
+    }
 
 
     try {
@@ -153,8 +155,7 @@ export default function QuoteFormBox({
             },
           });
 
-      refreshUnapprovedCount();
-      refreshCount();
+      refreshAll();
       onSuccess(
         isEdit ? "Quote updated successfully!" : "Quote created!",
         response.data.id

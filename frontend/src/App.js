@@ -15,6 +15,8 @@ import SubmittedQuotesPage from "./pages/SubmittedQuotesPage";
 import LoadingPage from "./pages/LoadingPage";
 import AdminApprovalPage from "./pages/AdminApprovalPage";
 import DebugJobsPage from "./pages/DebugJobsPage";
+import UnratedQuotesPage from "./pages/UnratedQuotesPage";
+import FlaggedQuotesPage from "./pages/FlaggedQuotesPage";
 
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
@@ -162,6 +164,24 @@ function AppRoutes({ user, loading, setUser }) {
             <AdminApprovalPage />
           </AdminRoute>
         }
+      />
+
+      <Route 
+        path="/quotes/unrated" 
+        element={
+          <PrivateRoute user={user} loading={loading}>
+            <UnratedQuotesPage user={user} />
+          </PrivateRoute>
+        } 
+      />
+
+      <Route 
+        path="/quotes/flagged" 
+        element={
+          <AdminRoute user={user} loading={loading}>
+            <FlaggedQuotesPage user={user} />
+          </AdminRoute>
+        } 
       />
 
       {/* <Route

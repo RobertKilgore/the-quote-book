@@ -36,7 +36,25 @@ class IsSuperUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_superuser)
 
+@api_view(['GET'])
+@permission_classes([IsApprovedUser])
+def unrated_quotes_count(request):
+    user = request.user
+    count = (
+        Quote.objects
+        .filter(approved=True, visible=True)
+        .exclude(rank_votes__user=user)
+        .distinct()
+        .count()
+    )
+    return Response({"count": count})
 
+
+@api_view(['GET'])
+@permission_classes([IsSuperUser])
+def flagged_quotes_count(request):
+    count = Quote.objects.filter(is_flagged=True).count()
+    return Response({"count": count})
 
 @api_view(['POST'])
 @permission_classes([IsApprovedUser])
@@ -68,6 +86,32 @@ def vote_quote_rank(request, quote_id):
     serializer = QuoteSerializer(quote, context={"request": request})
     return Response(serializer.data, status=200)
 
+
+
+@api_view(["GET"])
+@permission_classes([IsApprovedUser])
+def list_unrated_quotes(request):
+    user = request.user
+    quotes = (
+        Quote.objects
+        .filter(approved=True, visible=True)
+        .exclude(rank_votes__user=user)
+        .distinct()
+        .order_by("-created_at")
+    )
+    data = QuoteSerializer(quotes, many=True, context={"request": request}).data
+    return Response(data)
+
+@api_view(["GET"])
+@permission_classes([IsSuperUser])
+def list_flagged_quotes(request):
+    quotes = (
+        Quote.objects
+        .filter(is_flagged=True)
+        .order_by("-created_at")
+    )
+    data = QuoteSerializer(quotes, many=True, context={"request": request}).data
+    return Response(data)
 
 @api_view(['GET'])
 @permission_classes([IsSuperUser])
@@ -211,22 +255,31 @@ def submit_signature(request):
         if not quote_id or not user_id or not image_data:
             return Response({"error": "Missing required fields"}, status=400)
 
-
-
         quote = Quote.objects.get(id=quote_id)
         signer = User.objects.get(id=user_id)
 
-        # decode and save image
+        # Decode and prepare new image
         format, imgstr = image_data.split(';base64,')
         ext = format.split('/')[-1]
         data = ContentFile(base64.b64decode(imgstr), name=f'sign_{signer.id}_{quote_id}.{ext}')
 
-        sig, _ = Signature.objects.get_or_create(quote=quote, user=signer)
+        # Fetch or create signature object
+        sig, created = Signature.objects.get_or_create(quote=quote, user=signer)
+
+        # Overwrite previous signature
+        if sig.signature_image:
+            sig.signature_image.delete(save=False)  # clean up old file
+
         sig.signature_image = data
-        sig.refused = False
+        sig.refused = False  # mark as signed
         sig.save()
 
         return Response({"success": True}, status=200)
+
+    except Exception as e:
+        import traceback
+        traceback_str = traceback.format_exc()
+        return Response({"error": str(e), "trace": traceback_str}, status=400)
 
     except Exception as e:
         import traceback
@@ -286,62 +339,53 @@ class QuoteViewSet(viewsets.ModelViewSet):
             )
 
     def update(self, request, *args, **kwargs):
-        quote = self.get_object()
         instance = self.get_object()
 
         if not request.user.is_superuser:
             raise PermissionDenied("Only admins can update quotes.")
 
-        response = super().update(request, *args, **kwargs)
-        instance.refresh_from_db()
+        # 🔄 clear flags *first* so serializer sees the change
+        instance.flagged_by.clear()
+        instance.is_flagged = False
+        instance.save(update_fields=["is_flagged"])
 
-        # Clear all flags
-        quote.flagged_by.clear()
-        quote.is_flagged = False
-        quote.save(update_fields=["is_flagged"])
-
-        # 🔁 Clear rarity votes
+        # ▸ reset votes & rank (optional but usually desired)
         QuoteRankVote.objects.filter(quote=instance).delete()
-
-        # 🔁 Recalculate rank
         update_quote_rank(instance)
 
-        # ✅ If the update just approved the quote, set approved_at
+        resp = super().update(request, *args, **kwargs)
 
-        if instance.approved:
+        # if the quote is now approved, stamp approved_at
+        if instance.approved and instance.approved_at is None:
             instance.approved_at = timezone.now()
-            print("update  view", instance.quote_source_image)
-            instance.save()
+            instance.save(update_fields=["approved_at"])
 
-        return response
+        return resp
 
+    # ---------- PARTIAL update ----------
     def partial_update(self, request, *args, **kwargs):
         if not request.user.is_superuser:
             raise PermissionDenied("Only admins can update quotes.")
 
         instance = self.get_object()
-        response = super().partial_update(request, *args, **kwargs)
-        
-        
 
-        # Clear all flags
+        # clear flags BEFORE serialisation
         instance.flagged_by.clear()
         instance.is_flagged = False
         instance.save(update_fields=["is_flagged"])
 
-                # 🔁 Clear rarity votes
         QuoteRankVote.objects.filter(quote=instance).delete()
-
-        # 🔁 Recalculate rank
         update_quote_rank(instance)
-        # Set approved_at if just approved
-        approved_now = self.get_object().approved
-        if approved_now:
-            instance.approved_at = timezone.now()
-            instance.save()
 
-        return response
+        resp = super().partial_update(request, *args, **kwargs)
+
+        if instance.approved and instance.approved_at is None:
+            instance.approved_at = timezone.now()
+            instance.save(update_fields=["approved_at"])
+
+        return resp
     
+
     def list(self, request, *args, **kwargs):
         # print("📌 Logged in user:", request.user)
         return super().list(request, *args, **kwargs)

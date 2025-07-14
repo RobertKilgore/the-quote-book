@@ -4,8 +4,7 @@ import VisibilityChip from "../components/VisibilityChip";
 import RarityChip from "../components/RarityChip"; 
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
-import { useSignature } from "../context/SignatureContext";
-import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
+import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
 
 const rarityColorMap = {
   common: "bg-white",
@@ -30,8 +29,7 @@ export default function QuoteChip({
   const [quote, setQuote] = useState(initialQuote);
   const [fadeIn, setFadeIn] = useState(true);
   const [isRemoved, setIsRemoved] = useState(false);
-  const { refreshCount } = useSignature();
-  const { refreshUnapprovedCount } = useUnapprovedQuotes();
+  const refreshAll = useRefreshAllQuoteContexts();
 
   const isParticipant = quote.participant_status?.some(p => p.user === user?.id);
   const participantData = quote.participant_status?.find(p => p.user === user?.id);
@@ -67,7 +65,7 @@ export default function QuoteChip({
               setFadeIn(true);
             });
         }
-        refreshCount();
+        refreshAll();
       }, 300);
     } catch (error) {
       if (onError) onError("Error refusing to sign. Please try again.");
@@ -84,8 +82,7 @@ export default function QuoteChip({
       setFadeIn(false);
       setTimeout(() => setIsRemoved(true), 300);
       onRemove?.();
-      refreshUnapprovedCount();
-      refreshCount();
+      refreshAll();
     } catch {
       if (onError) onError("Error deleting quote.");
     }

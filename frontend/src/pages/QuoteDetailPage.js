@@ -1,14 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiX } from "react-icons/fi";
+import { FiX, FiPenTool} from "react-icons/fi";
 import api from "../api/axios";
 import SignaturePad from "signature_pad";
 import { confirmAlert } from "react-confirm-alert";
 import ErrorBanner from "../components/ErrorBanner";
-import EmptyState from "../components/EmptyState";
+import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
 import getCookie from "../utils/getCookie";
-import { useSignature } from "../context/SignatureContext";
-import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import VisibilityChip from "../components/VisibilityChip";
 import RarityChip from "../components/RarityChip"; 
 
@@ -71,13 +69,86 @@ function QuoteDetailPage({ user }) {
   const [signingAs, setSigningAs] = useState(null);
   const [canSign, setCanSign] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
+  const refreshAll = useRefreshAllQuoteContexts();
 
   const canvasRef = useRef(null);
   const [signaturePad, setSignaturePad] = useState(null);
-
-  const { refreshCount } = useSignature();
-  const { refreshUnapprovedCount } = useUnapprovedQuotes();
   const [showImageModal, setShowImageModal] = useState(false);
+  
+  const SIG_RATIO = 4;                // width : height
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx    = canvas.getContext('2d');
+    const dpr    = Math.max(window.devicePixelRatio || 1, 1);
+
+    /* draw baseline + X (permanent) */
+      const paintGuide = () => {
+      const w = canvas.parentElement.clientWidth;
+      const h = w / SIG_RATIO;
+
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      const padding = w * 0.10;         // 10% left/right
+      const lineW   = w * 0.80;         // 80% line width
+      const y       = .75 * h;           // baseline y-position
+
+      // X drawing slightly offset left of baseline start
+      const xSize = 14;
+      const xxOffset = 12; 
+      const xyOffset = 7;
+      const xxCenter = padding - xxOffset;
+      const xyCenter = y - xyOffset;
+
+      ctx.strokeStyle = "#a0aec0";
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      ctx.moveTo(xxCenter - xSize / 2, xyCenter - xSize / 2);
+      ctx.lineTo(xxCenter + xSize / 2, xyCenter + xSize / 2);
+      ctx.moveTo(xxCenter - xSize / 2, xyCenter + xSize / 2);
+      ctx.lineTo(xxCenter + xSize / 2, xyCenter - xSize / 2);
+      ctx.stroke();
+
+      // Baseline
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(padding + lineW, y);
+      ctx.stroke();
+    };
+
+    /* create / recreate signature-pad */
+    let pad;
+    const initPad = () => {
+      paintGuide();
+      const w = canvas.parentElement.clientWidth;
+      const minW = 0.5 * (w / 800);
+      const maxW = 2.0 * (w / 800);
+
+      pad?.off();
+      pad = new SignaturePad(canvas, { minWidth: minW, maxWidth: maxW });
+      paintGuide();
+      pad.onBegin = () => setHasDrawn(true);
+      setSignaturePad(pad);
+    };
+
+    initPad();
+    window.addEventListener('resize', initPad);
+    return () => {
+      pad?.off();
+      window.removeEventListener('resize', initPad);
+    };
+  }, [quote]);
 
   useEffect(() => {
     if (user && id) {
@@ -130,39 +201,6 @@ function QuoteDetailPage({ user }) {
     );
   }, [quote, user]);
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    const context = canvas.getContext("2d");
-
-    let pad = null;
-
-    const resizeCanvas = () => {
-      const displayWidth = canvas.offsetWidth;
-      const displayHeight = displayWidth / 5;
-      canvas.width = displayWidth * ratio;
-      canvas.height = displayHeight * ratio;
-      context.setTransform(1, 0, 0, 1, 0, 0);
-      context.scale(ratio, ratio);
-      const baseWidth = 800;
-      const scaleFactor = displayWidth / baseWidth;
-      const minWidth = 0.5 * scaleFactor;
-      const maxWidth = 2.0 * scaleFactor;
-
-      pad = new SignaturePad(canvas, { minWidth, maxWidth });
-      pad.clear();
-      setSignaturePad(pad);
-    };
-
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-    return () => {
-      window.removeEventListener("resize", resizeCanvas);
-      if (pad) pad.off?.();
-    };
-  }, [quote]);
-
   const handleSignatureSubmit = async () => {
     if (!signaturePad || signaturePad.isEmpty()) {
       setError("Please provide a signature first.");
@@ -181,7 +219,7 @@ function QuoteDetailPage({ user }) {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
-      refreshCount();
+      refreshAll();
 
       const res = await api.get(`/api/quotes/${quote.id}/`, {
         withCredentials: true,
@@ -223,7 +261,7 @@ function QuoteDetailPage({ user }) {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
-      refreshCount();
+      
 
       const res = await api.get(`/api/quotes/${quote.id}/`, {
         withCredentials: true,
@@ -249,12 +287,58 @@ function QuoteDetailPage({ user }) {
       } else {
         setSigningAs(stillEligible[0]?.id ?? null);
       }
+      refreshAll();
     } catch {
       setError("Error refusing to sign.");
     }
   };
 
-  const handleClear = () => signaturePad?.clear();
+  const handleClear = () => {
+    signaturePad?.clear();
+    setHasDrawn(false);
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      if (ctx) {
+        const w = canvasRef.current.parentElement.clientWidth;
+        const h = w / SIG_RATIO;
+
+        const dpr = Math.max(window.devicePixelRatio || 1, 1);
+        canvasRef.current.width = w * dpr;
+        canvasRef.current.height = h * dpr;
+        canvasRef.current.style.width = `${w}px`;
+        canvasRef.current.style.height = `${h}px`;
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        const padding = w * 0.10;
+        const lineW = w * 0.80;
+        const y = .75 * h;
+
+        const xSize = 14;
+        const xxOffset = 12;
+        const xyOffset = 7;
+        const xxCenter = padding - xxOffset;
+        const xyCenter = y - xyOffset;
+
+        ctx.strokeStyle = "#a0aec0";
+        ctx.lineWidth = 1.5;
+
+        ctx.beginPath();
+        ctx.moveTo(xxCenter - xSize / 2, xyCenter - xSize / 2);
+        ctx.lineTo(xxCenter + xSize / 2, xyCenter + xSize / 2);
+        ctx.moveTo(xxCenter - xSize / 2, xyCenter + xSize / 2);
+        ctx.lineTo(xxCenter + xSize / 2, xyCenter - xSize / 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(padding + lineW, y);
+        ctx.stroke();
+      }
+    }
+  };
 
   const handleDelete = () => {
     confirmAlert({
@@ -274,8 +358,7 @@ function QuoteDetailPage({ user }) {
                 withCredentials: true,
                 headers: { "X-CSRFToken": getCookie("csrftoken") },
               });
-              refreshUnapprovedCount();
-              refreshCount();
+              refreshAll();
               navigate("/");
             } catch {
               setError("Failed to delete quote.");
@@ -306,6 +389,7 @@ function QuoteDetailPage({ user }) {
         }]
       };
       setQuote(updated);
+      refreshAll();
     } catch {
       setError("Failed to flag quote.");
     }
@@ -323,6 +407,7 @@ function QuoteDetailPage({ user }) {
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
       setQuote(res.data);
+      refreshAll();
     } catch {
       setError("Failed to register vote.");
     }
@@ -509,10 +594,6 @@ function QuoteDetailPage({ user }) {
               }
             }}
           >
-            <h3 className="text-xl font-semibold mb-2">Sign this Quote</h3>
-            <p className="mb-4 text-gray-600">
-              Please sign below or refuse to sign.
-            </p>
 
             {user?.isSuperuser && eligibleSigners.length > 0 && (
               <div className="mb-4">
@@ -533,16 +614,21 @@ function QuoteDetailPage({ user }) {
               </div>
             )}
 
-            <div className="bg-gray-100 p-4 rounded shadow-inner mb-4">
+            <div className="relative w-full mb-6">
+              {/* Canvas */}
               <canvas
                 ref={canvasRef}
-                className="bg-white border rounded"
-                style={{ width: "100%", aspectRatio: "5 / 1" }}
-                width={800}
-                height={160}
+                className="w-full touch-none"   // <-- make sure touch events hit canvas
               />
-            </div>
 
+              {/* Placeholder text + pen icon (pointer-events NONE for the wrapper too) */}
+              {!hasDrawn && (
+                <div className="absolute inset-0 flex items-center justify-center gap-2 text-gray-300 text-lg pointer-events-none">
+                  <FiPenTool className="text-xl" />
+                  <span>Please sign here</span>
+                </div>
+              )}
+            </div>
             <div className="flex justify-between items-center flex-wrap gap-4">
               <div className="flex gap-4">
                 <button

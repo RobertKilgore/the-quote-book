@@ -7,6 +7,9 @@ import { SignatureProvider } from './context/SignatureContext';
 import { UnapprovedQuoteProvider } from "./context/UnapprovedQuoteContext";
 import { UnapprovedUserProvider } from "./context/UnapprovedUserContext";
 import { NavbarProvider } from "./context/NavbarContext";
+import { UnratedQuoteProvider }       from "./context/UnratedQuoteContext";
+import { FlaggedQuoteProvider }       from "./context/FlaggedQuoteContext";
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -15,7 +18,11 @@ root.render(
       <SignatureProvider>
           <UnapprovedUserProvider>
             <NavbarProvider>
-              <App />
+              <UnratedQuoteProvider>
+                <FlaggedQuoteProvider>
+                    <App />
+                </FlaggedQuoteProvider>
+              </UnratedQuoteProvider>
             </NavbarProvider>
           </UnapprovedUserProvider>
       </SignatureProvider>

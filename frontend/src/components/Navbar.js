@@ -9,11 +9,15 @@ import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import { useUnapprovedUserCount } from "../context/UnapprovedUserContext";
 import { useNavbar } from "../context/NavbarContext";
+import { useUnratedQuotes } from "../context/UnratedQuoteContext";
+import { useFlaggedQuotes } from "../context/FlaggedQuoteContext";
 
 export default function Navbar({ user, setUser, loading }) {
   const { pendingCount } = useSignature();
   const { unapprovedCount } = useUnapprovedQuotes();
   const { unapprovedUserCount } = useUnapprovedUserCount();
+  const { unratedCount } = useUnratedQuotes();
+  const { flaggedCount } = useFlaggedQuotes();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,6 +123,8 @@ export default function Navbar({ user, setUser, loading }) {
                   pendingCount={pendingCount}
                   unapprovedCount={unapprovedCount}
                   unapprovedUserCount={unapprovedUserCount}
+                  unratedQuoteCount={unratedCount}
+                  flaggedQuoteCount={flaggedCount}
                   layout="row"
                 />
               </div>
