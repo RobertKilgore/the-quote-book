@@ -13,10 +13,12 @@ import PendingSignatures from "./pages/PendingSignatures";
 import UnapprovedQuotePage from "./pages/UnapprovedQuotePage";
 import SubmittedQuotesPage from "./pages/SubmittedQuotesPage";
 import LoadingPage from "./pages/LoadingPage";
-import AdminApprovalPage from "./pages/AdminApprovalPage";
+import UsersPage from "./pages/UsersPage";
 import DebugJobsPage from "./pages/DebugJobsPage";
 import UnratedQuotesPage from "./pages/UnratedQuotesPage";
 import FlaggedQuotesPage from "./pages/FlaggedQuotesPage";
+
+import useAppContext from "./context/useAppContext";
 
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
@@ -31,7 +33,7 @@ import "react-confirm-alert/src/react-confirm-alert.css";
 
 function App() {
   const refreshAll = useRefreshAllQuoteContexts();
-  const [user, setUser] = useState(null);
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,6 +46,9 @@ function App() {
           email: res.data.email,
           isSuperuser: res.data.is_superuser,
         });
+
+        refreshAll(); // from useSignature
+
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -55,18 +60,16 @@ function App() {
     }
   }, [user]);
 
-  if (loading) {
-    return <LoadingPage />;  // ✅ Prevent flashing during initial load
-  }
 
+  if (loading) return <LoadingPage />;  // ✅ Prevent flashing during initial load
   return (
     // Wrap the entire app with Router to provide routing context for useLocation
     <Router>
       <ErrorBanner /> 
       <SuccessBanner />
-      <Navbar user={user} setUser={setUser} />
+      <Navbar/>
       <div className="pt-16 p-4">
-        <AppRoutes user={user} loading={loading} setUser={setUser} />
+        <AppRoutes loading={loading} />
       </div>
     </Router>
   );
@@ -77,14 +80,14 @@ function AppRoutes({ user, loading, setUser }) {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage user={user} setUser={setUser} loading={loading}/>} />
+      <Route path="/login" element={<LoginPage loading={loading}/>} />
       <Route path="/request-account" element={<RequestAccountPage loading={loading}/>} />
 
       <Route
-        path="/"
+        path="/home"
         element={
-          <PrivateRoute user={user} loading={loading}>
-            <HomePage user={user} loading={loading}/>
+          <PrivateRoute loading={loading}>
+            <HomePage loading={loading}/>
           </PrivateRoute>
         }
       />
@@ -92,8 +95,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route
         path="/quote/:id"
         element={
-          <PrivateRoute user={user} loading={loading}>
-            <QuoteDetailPage user={user} loading={loading}/>
+          <PrivateRoute loading={loading}>
+            <QuoteDetailPage loading={loading}/>
           </PrivateRoute>
         }
       />
@@ -101,8 +104,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route
         path="/request-quote"
         element={
-          <PrivateRoute user={user} loading={loading}>
-            <RequestQuotePage user={user} loading={loading}/>
+          <PrivateRoute loading={loading}>
+            <RequestQuotePage loading={loading}/>
           </PrivateRoute>
         }
       />
@@ -110,8 +113,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route
         path="/quotes/submitted"
         element={
-          <PrivateRoute user={user} loading={loading}>
-            <SubmittedQuotesPage user={user} loading={loading}/>
+          <PrivateRoute loading={loading}>
+            <SubmittedQuotesPage loading={loading}/>
           </PrivateRoute>
         }
       />
@@ -119,8 +122,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route
         path="/signatures/pending"
         element={
-          <PrivateRoute user={user} loading={loading}>
-            <PendingSignatures user={user} loading={loading}/>
+          <PrivateRoute loading={loading}>
+            <PendingSignatures loading={loading}/>
           </PrivateRoute>
         }
       />
@@ -128,8 +131,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route
         path="/create-quote"
         element={
-          <AdminRoute user={user} loading={loading}>
-            <CreateQuotePage user={user} loading={loading}/>
+          <AdminRoute loading={loading}>
+            <CreateQuotePage loading={loading}/>
           </AdminRoute>
         }
       />
@@ -137,8 +140,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route
         path="/quote/:id/edit"
         element={
-          <AdminRoute user={user} loading={loading}>
-            <EditQuotePage user={user} loading={loading}/>
+          <AdminRoute loading={loading}>
+            <EditQuotePage loading={loading}/>
           </AdminRoute>
         }
       />
@@ -146,17 +149,17 @@ function AppRoutes({ user, loading, setUser }) {
       <Route
         path="/unapproved-quotes"
         element={
-          <AdminRoute user={user} loading={loading}>
-            <UnapprovedQuotePage user={user} loading={loading}/>
+          <AdminRoute loading={loading}>
+            <UnapprovedQuotePage loading={loading}/>
           </AdminRoute>
         }
       />
 
       <Route
-        path="/account-requests"
+        path="/Users"
         element={
-          <AdminRoute user={user} loading={loading}>
-            <AdminApprovalPage />
+          <AdminRoute loading={loading}>
+            <UsersPage/>
           </AdminRoute>
         }
       />
@@ -164,8 +167,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route 
         path="/quotes/unrated" 
         element={
-          <PrivateRoute user={user} loading={loading}>
-            <UnratedQuotesPage user={user} />
+          <PrivateRoute loading={loading}>
+            <UnratedQuotesPage/>
           </PrivateRoute>
         } 
       />
@@ -173,8 +176,8 @@ function AppRoutes({ user, loading, setUser }) {
       <Route 
         path="/quotes/flagged" 
         element={
-          <AdminRoute user={user} loading={loading}>
-            <FlaggedQuotesPage user={user} />
+          <AdminRoute loading={loading}>
+            <FlaggedQuotesPage/>
           </AdminRoute>
         } 
       />
@@ -182,8 +185,8 @@ function AppRoutes({ user, loading, setUser }) {
       {/* <Route
         path="/debug-jobs"
         element={
-          <AdminRoute user={user} loading={loading}>
-            <DebugJobsPage user={user} />
+          <AdminRoute loading={loading}>
+            <DebugJobsPage/>
           </AdminRoute>
         }
       /> */}

@@ -1,9 +1,8 @@
 import QuoteListPage from "../components/QuoteListPage";
 
-export default function FlaggedQuotesPage({ user }) {
+export default function FlaggedQuotesPage() {
   return (
     <QuoteListPage
-      user={user}
       fetchUrl="/quotes/flagged/"
       scrollKey="flagged"
       title="Flagged Quotes"

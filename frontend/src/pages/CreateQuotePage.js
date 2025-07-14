@@ -1,29 +1,25 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ErrorBanner from "../components/ErrorBanner";
-import SuccessBanner from "../components/SuccessBanner";
 import QuoteFormBox from "../components/QuoteFormBox";
 import LoadingPage from "../pages/LoadingPage";
+import useAppContext from "../context/useAppContext";
 
 
-function CreateQuotePage({user, loading}) {
+function CreateQuotePage({loading}) {
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
 
   const handleSuccess = (message, quoteId) => {
     setSuccess(message);
-    setTimeout(() => {
-      navigate(`/quote/${quoteId}`);
-    }, 1500);
+    setTimeout(() => navigate(`/quote/${quoteId}`), 1500);
+  };
+
+  const handleError = (message) => {
+    setError(message);
   };
   
   if (loading) return <LoadingPage />;
-  return (
-    <>
-      <ErrorBanner message={error} />
-      <SuccessBanner message={success} />
-      
+  return ( 
       <QuoteFormBox
         title="Create a New Quote"
         submitText="Submit Quote"
@@ -32,13 +28,9 @@ function CreateQuotePage({user, loading}) {
         defaultRedacted={false}
         showUserSelect={true}
         showVisibilityOptions={true}
-        onSuccess={(msg, id) => {
-          setSuccess(msg);
-          setTimeout(() => navigate(`/quote/${id}`), 1500);
-        }}
-        onError={setError}
+        onSuccess={handleSuccess}
+        onError={handleError}
       />
-    </>
   );
 }
 

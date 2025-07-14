@@ -2,16 +2,26 @@ import { Link } from "react-router-dom";
 import { FaPenFancy, FaStarHalfAlt, FaFlag } from "react-icons/fa";
 import { MdOutlineGavel } from "react-icons/md";
 import { FaUserShield } from "react-icons/fa6";
+import { useSignature } from "../context/SignatureContext";
+import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
+import { useUnapprovedUserCount } from "../context/UnapprovedUserContext";
+import { useUnratedQuotes } from "../context/UnratedQuoteContext";
+import { useFlaggedQuotes } from "../context/FlaggedQuoteContext";
+import useAppContext from "../context/useAppContext";
 
 export default function NavButtons({
-  isAdmin,
-  pendingCount,
-  unapprovedCount,
-  unapprovedUserCount,
-  unratedQuoteCount,
-  flaggedQuoteCount,
   layout = "row", // "row" (top) | "bar" (bottom)
 }) {
+  const { user, setUser, setError, setSuccess } = useAppContext();
+  const { pendingCount } = useSignature();
+  const { unapprovedCount } = useUnapprovedQuotes();
+  const { unapprovedUserCount } = useUnapprovedUserCount();
+  const { unratedCount } = useUnratedQuotes();
+  const { flaggedCount } = useFlaggedQuotes();
+  const isAdmin = user?.isSuperuser
+
+  console.log(unapprovedCount)
+
   const isBar = layout === "bar";
 
   const wrapperClass = isBar
@@ -56,9 +66,9 @@ export default function NavButtons({
       {/* Unrated Quotes */}
       <Link to="/quotes/unrated" className={buttonClass}>
         <FaStarHalfAlt size={isBar ? 24 : 20} title="Unrated Quotes" />
-        {unratedQuoteCount > 0 && (
+        {unratedCount > 0 && (
           <span className="absolute -top-0 -right-0 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
-            {unratedQuoteCount}
+            {unratedCount}
           </span>
         )}
       </Link>
@@ -67,9 +77,9 @@ export default function NavButtons({
       {isAdmin && (
         <Link to="/quotes/flagged" className={buttonClass}>
           <FaFlag size={isBar ? 22 : 18} title="Flagged Quotes" />
-          {flaggedQuoteCount > 0 && (
+          {flaggedCount > 0 && (
             <span className="absolute -top-0 -right-0 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
-              {flaggedQuoteCount}
+              {flaggedCount}
             </span>
           )}
         </Link>
@@ -77,7 +87,7 @@ export default function NavButtons({
 
       {/* Account Requests (Admin only) */}
       {isAdmin && (
-        <Link to="/account-requests" className={buttonClass}>
+        <Link to="/users" className={buttonClass}>
           <FaUserShield size={isBar ? 22 : 18} title="Pending User Requests" />
           {unapprovedUserCount > 0 && (
             <span className="absolute -top-0 -right-0 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">

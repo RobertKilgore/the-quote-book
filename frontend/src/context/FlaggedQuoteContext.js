@@ -11,7 +11,8 @@ export function FlaggedQuoteProvider({ children }) {
       .then(res => {
         setFlaggedCount(res.data.length);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Failed to fetch unapproved quote count", error);
         setFlaggedCount(0);
       });
   };

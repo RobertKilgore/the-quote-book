@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import ErrorBanner from "../components/ErrorBanner";
+import useAppContext from "../context/useAppContext";
 import getCookie from "../utils/getCookie";
 
 const RequestAccountPage = () => {
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -57,8 +57,6 @@ const RequestAccountPage = () => {
   };
 
   return (
-    <>
-      <ErrorBanner message={error} />
       <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow">
         <h2 className="text-2xl font-bold mb-4 text-center">Request Account</h2>
 
@@ -110,7 +108,6 @@ const RequestAccountPage = () => {
           </Link>
         </div>
       </div>
-    </>
   );
 };
 

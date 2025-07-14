@@ -39,10 +39,6 @@ export default function QuoteFormBox({
   
 
 
-  const { refreshCount } = useSignature();
-  const { refreshUnapprovedCount } = useUnapprovedQuotes();
-
-
 
   useEffect(() => {
     api.get("/api/users/", { withCredentials: true })

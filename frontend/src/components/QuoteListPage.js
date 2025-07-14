@@ -4,9 +4,9 @@ import QuoteChip from "./QuoteChip";
 import EmptyState from "./EmptyState";
 import LoadingPage from "../pages/LoadingPage";
 import useScrollRestoration from "../hooks/useScrollRestoration";
+import useAppContext from "../context/useAppContext";
 
 export default function QuoteListPage({
-  user,
   fetchUrl,
   title,
   emptyTitle,
@@ -17,9 +17,9 @@ export default function QuoteListPage({
 }) {
   const [loading, setLoading]   = useState(true);
   const [quotes,  setQuotes]    = useState([]);
-  const [error,   setError]     = useState(null);
+  const { user, setUser, setError, setSuccess } = useAppContext();
 
-  useScrollRestoration(scrollKey, loading);
+  useScrollRestoration({key: scrollKey, loading});
 
   useEffect(() => {
     setLoading(true);
@@ -35,8 +35,6 @@ export default function QuoteListPage({
   };
 
   if (loading) return <LoadingPage />;
-  if (error)   return <EmptyState title="Oops!" message={error} />;
-
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-4">
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
@@ -48,7 +46,6 @@ export default function QuoteListPage({
           <QuoteChip
             key={q.id}
             quote={q}
-            user={user}
             onError={setError}
             onRemove={() => handleRemove(q.id)}
             {...quoteChipProps}

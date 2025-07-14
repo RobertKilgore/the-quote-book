@@ -4,20 +4,11 @@ import { FaUserCircle } from "react-icons/fa";
 import axios from "axios";
 import getCookie from "../utils/getCookie";
 import NavButtons from "./NavButtons";
-import ErrorBanner from "../components/ErrorBanner";
-import { useSignature } from "../context/SignatureContext";
-import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
-import { useUnapprovedUserCount } from "../context/UnapprovedUserContext";
 import { useNavbar } from "../context/NavbarContext";
-import { useUnratedQuotes } from "../context/UnratedQuoteContext";
-import { useFlaggedQuotes } from "../context/FlaggedQuoteContext";
+import useAppContext from "../context/useAppContext";
 
-export default function Navbar({ user, setUser, loading }) {
-  const { pendingCount } = useSignature();
-  const { unapprovedCount } = useUnapprovedQuotes();
-  const { unapprovedUserCount } = useUnapprovedUserCount();
-  const { unratedCount } = useUnratedQuotes();
-  const { flaggedCount } = useFlaggedQuotes();
+export default function Navbar({ loading }) {
+  const { user, setUser, setError, setSuccess } = useAppContext();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,14 +16,12 @@ export default function Navbar({ user, setUser, loading }) {
     location.pathname === "/login" || location.pathname === "/request-account";
 
   const { collapsed, setCollapsed } = useNavbar();
-  const [error, setError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const buttonWrapRef = useRef(null);
   const userMenuRef = useRef(null);
   const dropdownRef   = useRef(null);   // the actual menu
   const bottomBarHeight = 80;
-  const isAdmin = user?.isSuperuser;
 
   const handleLogout = async () => {
     try {
@@ -99,14 +88,14 @@ export default function Navbar({ user, setUser, loading }) {
       <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white shadow h-16 flex items-center">
         {isLoginLikePage ? (
           <div className="w-full text-center">
-            <Link to="/" className="text-lg font-semibold hover:underline">
+            <Link to="/home" className="text-lg font-semibold hover:underline">
               The Quote Book
             </Link>
           </div>
         ) : (
           <div className="flex justify-between items-center w-full px-4">
             <div className="flex-shrink-0">
-              <Link to="/" className="text-lg font-semibold hover:underline">
+              <Link to="/home" className="text-lg font-semibold hover:underline">
                 The Quote Book
               </Link>
             </div>
@@ -119,12 +108,6 @@ export default function Navbar({ user, setUser, loading }) {
               >
 
                 <NavButtons
-                  isAdmin={isAdmin}
-                  pendingCount={pendingCount}
-                  unapprovedCount={unapprovedCount}
-                  unapprovedUserCount={unapprovedUserCount}
-                  unratedQuoteCount={unratedCount}
-                  flaggedQuoteCount={flaggedCount}
                   layout="row"
                 />
               </div>
@@ -182,17 +165,11 @@ export default function Navbar({ user, setUser, loading }) {
         <div className="fixed bottom-0 left-0 w-full h-20 bg-gray-800 text-white shadow-inner z-40 flex items-center">
           <div className="w-full px-4">
             <NavButtons
-              isAdmin={isAdmin}
-              pendingCount={pendingCount}
-              unapprovedCount={unapprovedCount}
-              unapprovedUserCount={unapprovedUserCount}
               layout="bar"
             />
           </div>
         </div>
       )}
-
-      <ErrorBanner message={error} />
     </>
   );
 }

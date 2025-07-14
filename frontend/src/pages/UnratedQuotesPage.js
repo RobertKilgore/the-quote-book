@@ -1,9 +1,8 @@
 import QuoteListPage from "../components/QuoteListPage";
 
-export default function UnratedQuotesPage({ user }) {
+export default function UnratedQuotesPage() {
   return (
     <QuoteListPage
-      user={user}
       fetchUrl="/quotes/unrated/"
       scrollKey="unrated"
       title="Unrated Quotes"

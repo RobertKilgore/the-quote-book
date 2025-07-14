@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
+import useAppContext from "../context/useAppContext";
 
-export default function DebugJobsPage({ user }) {
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
+export default function DebugJobsPage() {
+  const { user, setUser, setError, setSuccess } = useAppContext();
+
+
 
   const handleTriggerJob = async () => {
     try {
@@ -12,17 +14,13 @@ export default function DebugJobsPage({ user }) {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") }
       });
-      setMessage(res.data.success || "Triggered!");
+      setSuccess(res.data.success || "Triggered!");
       setError(null);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to trigger job.");
-      setMessage(null);
+      setSuccess(null);
     }
   };
-
-  if (!user?.isSuperuser) {
-    return <p className="text-red-600 text-center mt-8">You do not have permission to view this page.</p>;
-  }
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-4 bg-white shadow rounded">
@@ -36,9 +34,6 @@ export default function DebugJobsPage({ user }) {
       >
         Run Auto-Refuse Job
       </button>
-
-      {message && <p className="mt-4 text-green-600">{message}</p>}
-      {error && <p className="mt-4 text-red-600">{error}</p>}
     </div>
   );
 }

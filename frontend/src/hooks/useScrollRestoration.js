@@ -1,36 +1,54 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-export default function useScrollRestoration(key, loading) {
-  const location = useLocation();
+const EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
 
-  // Restore scroll when content is ready
-  useEffect(() => {
-    if (loading) return;
+export default function useScrollRestoration({ key, loading, matchPath = null }) {
+  const { pathname } = useLocation();
 
-    const y = sessionStorage.getItem(`scroll-${key}`);
-    if (y !== null) {
-      var scrollPos = parseInt(y, 10)
+  const pathMatches = () => {
+    if (typeof matchPath === "function") return matchPath(pathname);
+    if (typeof matchPath === "string") return pathname === matchPath;
+    return pathname.startsWith(`/${key}`);
+  };
+
+  const storageKey = `scroll-${key}`;
+
+  // Restore scroll position
+  useLayoutEffect(() => {
+    if (loading || !pathMatches()) return;
+
+    const saved = sessionStorage.getItem(storageKey);
+    if (!saved) return;
+
+    try {
+      const { y, savedAt } = JSON.parse(saved);
+      if (Date.now() - savedAt > EXPIRATION_MS) {
+        sessionStorage.removeItem(storageKey);
+        return;
+      }
       requestAnimationFrame(() => {
-        if (scrollPos < 5) {
-          window.scrollTo(0, 0);
-        } else {
-          window.scrollTo(0, scrollPos);
-        }
-        
+        window.scrollTo(0, y < 5 ? 0 : y);
       });
+    } catch {
+      sessionStorage.removeItem(storageKey);
     }
-  }, [key, loading]);
+  }, [loading, pathname]);
 
-  // Save on scroll if scrollY > 0
-  useEffect(() => {
+  // Save scroll position
+  useLayoutEffect(() => {
+    if (loading || !pathMatches()) return;
+
     const handleScroll = () => {
       if (window.scrollY > 0) {
-        sessionStorage.setItem(`scroll-${key}`, window.scrollY);
+        sessionStorage.setItem(
+          storageKey,
+          JSON.stringify({ y: window.scrollY, savedAt: Date.now() })
+        );
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [key, location.pathname]);
+  }, [pathname, loading]);
 }

@@ -4,11 +4,11 @@ import { FiX, FiPenTool} from "react-icons/fi";
 import api from "../api/axios";
 import SignaturePad from "signature_pad";
 import { confirmAlert } from "react-confirm-alert";
-import ErrorBanner from "../components/ErrorBanner";
 import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
 import getCookie from "../utils/getCookie";
 import VisibilityChip from "../components/VisibilityChip";
 import RarityChip from "../components/RarityChip"; 
+import useAppContext from "../context/useAppContext";
 
 
 const rarityColors = {
@@ -59,13 +59,13 @@ const rarityColorMap = {
 };
 
 
-function QuoteDetailPage({ user }) {
+function QuoteDetailPage() {
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState(null);
-  const [error, setError] = useState(null);
   const [signingAs, setSigningAs] = useState(null);
   const [canSign, setCanSign] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
@@ -359,7 +359,7 @@ function QuoteDetailPage({ user }) {
                 headers: { "X-CSRFToken": getCookie("csrftoken") },
               });
               refreshAll();
-              navigate("/");
+              navigate("/home");
             } catch {
               setError("Failed to delete quote.");
             }
@@ -426,7 +426,7 @@ function QuoteDetailPage({ user }) {
   const currentVote = quote?.user_rarity_vote;
 
 
-  //if (error) return <EmptyState title="Oops!" message={error} />;
+ 
   if (!quote || !user) return null;
 
 
@@ -439,8 +439,6 @@ function QuoteDetailPage({ user }) {
 
 
   return (
-        <>
-      <ErrorBanner message={error} />
       <div className={`max-w-4xl mx-auto mt-10 p-6 rounded-xl shadow-lg space-y-6 transition-all duration-300 ${rarityColors[quote?.rank] || "bg-white"}`}>
         <div className="relative">
           <RarityChip rarity={quote.rank} size="large" />
@@ -740,7 +738,6 @@ function QuoteDetailPage({ user }) {
             </div>
           )}
       </div>
-    </>
   );
 
 }

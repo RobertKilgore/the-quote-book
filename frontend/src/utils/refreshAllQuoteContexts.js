@@ -18,10 +18,12 @@ export default function useRefreshAllQuoteContexts() {
     refreshCount?.();
     refreshUnratedCount?.();
 
-    if (user?.isSuperUser) {
+    if (user?.isSuperuser) {
     //refreshUnapprovedUserCount?.();
     refreshFlaggedCount?.();
     refreshUnapprovedCount?.();
+    } else {
+        console.log("not supe")
     }
   };
 

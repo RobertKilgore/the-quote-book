@@ -1,9 +1,8 @@
 import QuoteListPage from "../components/QuoteListPage";
 
-export default function PendingSignaturesPage({ user }) {
+export default function PendingSignaturesPage() {
   return (
     <QuoteListPage
-      user={user}
       fetchUrl="/api/signatures/pending/"
       scrollKey="pending"
       title="Pending Signatures"

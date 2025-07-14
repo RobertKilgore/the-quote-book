@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function EmptyState({ title, message }) {
   return (
     <div className="flex justify-center items-center h-96">

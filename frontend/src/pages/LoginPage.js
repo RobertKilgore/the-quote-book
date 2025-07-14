@@ -2,34 +2,22 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
-import ErrorBanner from "../components/ErrorBanner";
-import SuccessBanner from "../components/SuccessBanner"; 
 import getCookie from "../utils/getCookie";
 import LoadingPage from "../pages/LoadingPage";
+import useAppContext from "../context/useAppContext";
 
-function LoginPage({ user, setUser, loading }) {
+function LoginPage({ loading }) {
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const location = useLocation();
-  const [success, setSuccess] = useState(() => {
-  const isFromRequestPage = location.state?.from === "request-account";
-  return isFromRequestPage ? location.state?.success || null : null;
-});
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/home");
     }
   }, [user, navigate]);
-
-  useEffect(() => {
-    if (success) {
-      // Remove the message from history after displaying
-      window.history.replaceState({}, document.title);
-    }
-  }, [success]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -58,17 +46,13 @@ function LoginPage({ user, setUser, loading }) {
           isSuperuser: res.data.is_superuser,
         });
 
-      navigate("/");
+      navigate("/home");
     } catch (err) {
-      console.error("Login failed:", err);
       setError("Invalid username or password");
     }
   };
   if (loading) return <LoadingPage />;
   return (
-    <>
-      <ErrorBanner message={error} /> {/* ✅ Consistent banner placement */}
-      <SuccessBanner message={success} />
       <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow">
         <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
         <form onSubmit={handleLogin} className="space-y-4">
@@ -103,7 +87,6 @@ function LoginPage({ user, setUser, loading }) {
           </Link>
         </div>
       </div>
-    </>
   );
 }
 

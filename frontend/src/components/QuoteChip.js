@@ -5,6 +5,7 @@ import RarityChip from "../components/RarityChip";
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
 import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
+import useAppContext from "../context/useAppContext";
 
 const rarityColorMap = {
   common: "bg-white",
@@ -16,7 +17,6 @@ const rarityColorMap = {
 
 export default function QuoteChip({
   quote: initialQuote,
-  user,
   onError,
   showVisibilityIcon = true,
   showSignButtons = true,
@@ -25,6 +25,7 @@ export default function QuoteChip({
   fadeBackIn = true,
   onRemove = null
 }) {
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const navigate = useNavigate();
   const [quote, setQuote] = useState(initialQuote);
   const [fadeIn, setFadeIn] = useState(true);

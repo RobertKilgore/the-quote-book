@@ -1,14 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ErrorBanner from "../components/ErrorBanner";
-import SuccessBanner from "../components/SuccessBanner";
+import useAppContext from "../context/useAppContext";
 import QuoteFormBox from "../components/QuoteFormBox";
 import LoadingPage from "../pages/LoadingPage";
 
-export default function RequestQuotePage({user, loading}) {
+export default function RequestQuotePage({loading}) {
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const { user, setUser, setError, setSuccess } = useAppContext();
 
   const handleSuccess = (message, quoteId) => {
     setSuccess(message);
@@ -18,11 +16,9 @@ export default function RequestQuotePage({user, loading}) {
   const handleError = (message) => {
     setError(message);
   };
+
   if (loading) return <LoadingPage />;
   return (
-    <>
-      <ErrorBanner message={error} />
-      <SuccessBanner message={success} />
       <QuoteFormBox
         title="Request a New Quote"
         submitText="Submit Quote Request"
@@ -35,6 +31,5 @@ export default function RequestQuotePage({user, loading}) {
         onSuccess={handleSuccess}
         onError={handleError}
       />
-    </>
   );
 }

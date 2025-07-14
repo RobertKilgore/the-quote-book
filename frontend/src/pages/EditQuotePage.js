@@ -1,16 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import ErrorBanner from "../components/ErrorBanner";
-import SuccessBanner from "../components/SuccessBanner";
+import useAppContext from "../context/useAppContext";
 import QuoteFormBox from "../components/QuoteFormBox";
 import LoadingPage from "../pages/LoadingPage";
 
-function EditQuotePage({user, loading}) {
+function EditQuotePage({loading}) {
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
 
   const handleSuccess = (message, quoteId) => {
     setSuccess(message);
@@ -20,11 +17,9 @@ function EditQuotePage({user, loading}) {
   const handleError = (message) => {
     setError(message);
   };
+
   if (loading) return <LoadingPage />;
   return (
-    <>
-      <ErrorBanner message={error} />
-      <SuccessBanner message={success} />
       <QuoteFormBox
         title="Edit Quote"
         submitText="Save Changes"
@@ -38,7 +33,6 @@ function EditQuotePage({user, loading}) {
         onSuccess={handleSuccess}
         onError={handleError}
       />
-    </>
   );
 }
 

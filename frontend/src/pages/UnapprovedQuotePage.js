@@ -1,9 +1,8 @@
 import QuoteListPage from "../components/QuoteListPage";
 
-export default function UnapprovedQuotesPage({ user }) {
+export default function UnapprovedQuotesPage() {
   return (
     <QuoteListPage
-      user={user}
       fetchUrl="/api/quotes/unapproved/"
       scrollKey="unapproved"
       title="Unapproved Quotes"

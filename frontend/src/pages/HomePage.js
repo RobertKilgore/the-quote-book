@@ -2,15 +2,17 @@ import { FiPlus } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useNavbar } from "../context/NavbarContext";
 import QuoteListPage from "../components/QuoteListPage";
+import useAppContext from "../context/useAppContext";
 
-export default function HomePage({ user }) {
+
+export default function HomePage() {
+  const { user, setUser, setError, setSuccess } = useAppContext();
   const navigate = useNavigate();
   const { collapsed } = useNavbar();
 
   return (
     <>
       <QuoteListPage
-        user={user}
         fetchUrl="/api/quotes/"
         scrollKey="home"
         title="Quotes"
