@@ -14,7 +14,6 @@ export function UnapprovedQuoteProvider({ children }) {
         withCredentials: true,
       });
       setUnapprovedCount(res.data.count || 0);
-      console.log("unapproved", res.data.count )
     } catch (error) {
       console.error("Failed to fetch unapproved quote count", error);
       setUnapprovedCount(0);

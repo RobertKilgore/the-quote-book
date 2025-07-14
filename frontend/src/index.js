@@ -27,7 +27,7 @@ root.render(
                   <UserProvider>
                     <ErrorProvider>
                       <SuccessProvider>
-                        <App />
+                        <div id="root" className="max-w-full overflow-x-hidden"><App /></div>
                       </SuccessProvider>
                     </ErrorProvider>
                   </UserProvider>

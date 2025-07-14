@@ -60,11 +60,11 @@ const rarityColorMap = {
 
 
 function QuoteDetailPage() {
-  const { user, setUser, setError, setSuccess } = useAppContext();
+  const { user, setUser, setError, setSuccess, loading, setLoading } = useAppContext();
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  //const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState(null);
   const [signingAs, setSigningAs] = useState(null);
   const [canSign, setCanSign] = useState(false);

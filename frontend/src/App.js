@@ -18,7 +18,10 @@ import DebugJobsPage from "./pages/DebugJobsPage";
 import UnratedQuotesPage from "./pages/UnratedQuotesPage";
 import FlaggedQuotesPage from "./pages/FlaggedQuotesPage";
 
+
 import useAppContext from "./context/useAppContext";
+import { useUnapprovedUserCount } from "./context/UnapprovedUserContext";
+
 
 import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
@@ -26,39 +29,26 @@ import PrivateRoute from "./components/PrivateRoute";
 
 import useRefreshAllQuoteContexts from "./utils/refreshAllQuoteContexts";
 
+
 import ErrorBanner from "./components/ErrorBanner";
 import SuccessBanner from "./components/SuccessBanner";
 import "react-confirm-alert/src/react-confirm-alert.css";
 
 
 function App() {
+  const { user, loading, setLoading } = useAppContext();  // ✅ use only this
   const refreshAll = useRefreshAllQuoteContexts();
-  const { user, setUser, setError, setSuccess } = useAppContext();
-  const [loading, setLoading] = useState(true);
+  const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
 
-  useEffect(() => {
-    axios.get("http://127.0.0.1:8000/api/test-auth/", { withCredentials: true })
-      .then(res => {
-        setUser({
-          id: res.data.id,
-          name: res.data.name,
-          username: res.data.username,
-          email: res.data.email,
-          isSuperuser: res.data.is_superuser,
-        });
-
-        refreshAll(); // from useSignature
-
-      })
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
-
+  // 🔄 Refresh quote data once the user is known
   useEffect(() => {
     if (user) {
-      refreshAll(); // from useSignature
+      refreshAll();
+      if (user.isSuperuser) refreshUnapprovedUserCount();
     }
   }, [user]);
+
+
 
 
   if (loading) return <LoadingPage />;  // ✅ Prevent flashing during initial load
@@ -68,16 +58,20 @@ function App() {
       <ErrorBanner /> 
       <SuccessBanner />
       <Navbar/>
-      <div className="pt-16 p-4">
+      <div className="pt-16 pb-20 px-4 w-full max-w-full overflow-x-hidden">
         <AppRoutes loading={loading} />
       </div>
     </Router>
   );
 }
 
-function AppRoutes({ user, loading, setUser }) {
+function AppRoutes({ loading }) {
   const location = useLocation(); // Can now safely use useLocation() because Router is wrapping the app
 
+
+  if (false) {
+    return <LoadingPage />;
+  }
   return (
     <Routes>
       <Route path="/login" element={<LoginPage loading={loading}/>} />

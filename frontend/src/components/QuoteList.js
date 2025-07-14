@@ -34,12 +34,12 @@ export default function QuoteListPage({
     setQuotes(prev => prev.filter(q => q.id !== id));
   };
 
-  if (loading) return <LoadingPage />;
+
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-4">
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
 
-      {quotes.length === 0 ? (
+      {(quotes.length === 0 && !loading) ? (
         <EmptyState title={emptyTitle} message={emptyMessage} />
       ) : (
         quotes.map(q => (

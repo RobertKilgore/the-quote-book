@@ -49,7 +49,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('quotes.urls')),            # ← Add this
     path('auth/', include('dj_rest_auth.urls')),     # ← Auth routes
-    path('auth/registration/', include('dj_rest_auth.registration.urls')),
+    ##path('auth/registration/', include('dj_rest_auth.registration.urls')),
     path("csrf/", set_csrf_cookie),
      # Optional root route
     path('', lambda request: JsonResponse({"message": "Welcome to The Quote Book API"})),

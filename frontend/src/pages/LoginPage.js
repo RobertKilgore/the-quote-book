@@ -6,8 +6,8 @@ import getCookie from "../utils/getCookie";
 import LoadingPage from "../pages/LoadingPage";
 import useAppContext from "../context/useAppContext";
 
-function LoginPage({ loading }) {
-  const { user, setUser, setError, setSuccess } = useAppContext();
+function LoginPage() {
+  const { user, setUser, setError, setSuccess} = useAppContext();
   const location = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +51,7 @@ function LoginPage({ loading }) {
       setError("Invalid username or password");
     }
   };
-  if (loading) return <LoadingPage />;
+
   return (
       <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow">
         <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>

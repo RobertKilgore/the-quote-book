@@ -12,13 +12,16 @@ import useScrollRestoration from "../hooks/useScrollRestoration";
 export default function AdminApprovalPage() {
   const { user, setUser, setError, setSuccess } = useAppContext();
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  //const [loading, setLoading] = useState(true);
+  const [loading1, setLoading1] = useState(true);
+  const [loading2, setLoading2] = useState(true);
   const [fadingIds, setFadingIds] = useState([]);
   const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
   const [users, setUsers] = useState([]);
   const [userFadingIds, setUserFadingIds] = useState([]);
 
-  useScrollRestoration({key: "Users", loading});
+  const loading = loading1 && loading2;
+  useScrollRestoration({key: "users", loading});
 
   useEffect(() => {
     fetchRequests();
@@ -34,6 +37,8 @@ export default function AdminApprovalPage() {
       setUsers(res.data);
     } catch (err) {
       setError("Failed to load active users.");
+    } finally {
+      setLoading1(false);
     }
   };
 
@@ -46,7 +51,7 @@ export default function AdminApprovalPage() {
     } catch (err) {
       setError("Failed to load account requests.");
     } finally {
-      setLoading(false);
+      setLoading2(false);
     }
   };
 
@@ -128,7 +133,7 @@ export default function AdminApprovalPage() {
       <div className="max-w-4xl mx-auto mt-8 space-y-8">
         <div>
           <h2 className="text-2xl font-bold mb-4">All Users</h2>
-          {users.length === 0 ? (
+          {users.length === 0 && !loading1 ? (
             <EmptyState
               title="No users found."
               message="There are no active users right now."
@@ -189,10 +194,8 @@ export default function AdminApprovalPage() {
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold mb-4">Pending Account Requests</h2>
-          {loading ? (
-            <LoadingPage />
-          ) : requests.length === 0 ? (
+          {!loading1 && ( <h2 className="text-2xl font-bold mb-4">Pending Account Requests</h2>) }
+          {requests.length === 0 && !loading2 ? (
             <EmptyState
               title="All clear!"
               message="No pending account requests at the moment."

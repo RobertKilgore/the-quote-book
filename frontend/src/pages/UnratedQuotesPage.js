@@ -1,4 +1,4 @@
-import QuoteListPage from "../components/QuoteListPage";
+import QuoteListPage from "../components/QuoteList";
 
 export default function UnratedQuotesPage() {
   return (

@@ -20,8 +20,6 @@ export default function NavButtons({
   const { flaggedCount } = useFlaggedQuotes();
   const isAdmin = user?.isSuperuser
 
-  console.log(unapprovedCount)
-
   const isBar = layout === "bar";
 
   const wrapperClass = isBar

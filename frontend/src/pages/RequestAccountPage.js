@@ -5,7 +5,7 @@ import useAppContext from "../context/useAppContext";
 import getCookie from "../utils/getCookie";
 
 const RequestAccountPage = () => {
-  const { user, setUser, setError, setSuccess } = useAppContext();
+  const { user, setUser, setError, setSuccess} = useAppContext();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -33,13 +33,8 @@ const RequestAccountPage = () => {
         }
       );
 
-      // Redirect to login with success flash message
-      navigate("/login", {
-        state: {
-          success: "Request submitted! Please wait for admin approval.",
-          from: "request-account",
-        },
-      });
+      setSuccess("Request submitted! Please wait for admin approval.");
+      navigate("/login");
     } catch (err) {
       const data = err.response?.data;
       if (data) {

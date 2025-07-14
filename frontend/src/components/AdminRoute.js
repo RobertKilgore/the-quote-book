@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import useAppContext from "../context/useAppContext";
+import { useUser } from "../context/UserContext";
 
-function AdminRoute({ loading, children }) {
-  const { user, setUser, setError, setSuccess } = useAppContext();
+function AdminRoute({ children }) {
+  const { user, loading } = useUser();
   if (loading) return null;
   if (!user) {
     return <Navigate to="/login" replace />;

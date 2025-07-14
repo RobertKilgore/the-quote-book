@@ -1,12 +1,12 @@
 import { FiPlus } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useNavbar } from "../context/NavbarContext";
-import QuoteListPage from "../components/QuoteListPage";
+import QuoteListPage from "../components/QuoteList";
 import useAppContext from "../context/useAppContext";
 
 
 export default function HomePage() {
-  const { user, setUser, setError, setSuccess } = useAppContext();
+  const { user, setUser, setError, setSuccess, loading, setLoading } = useAppContext();
   const navigate = useNavigate();
   const { collapsed } = useNavbar();
 

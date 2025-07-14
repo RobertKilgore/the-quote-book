@@ -4,9 +4,9 @@ import useAppContext from "../context/useAppContext";
 import QuoteFormBox from "../components/QuoteFormBox";
 import LoadingPage from "../pages/LoadingPage";
 
-export default function RequestQuotePage({loading}) {
+export default function RequestQuotePage() {
   const navigate = useNavigate();
-  const { user, setUser, setError, setSuccess } = useAppContext();
+  const { user, setUser, setError, setSuccess} = useAppContext();
 
   const handleSuccess = (message, quoteId) => {
     setSuccess(message);
@@ -17,7 +17,6 @@ export default function RequestQuotePage({loading}) {
     setError(message);
   };
 
-  if (loading) return <LoadingPage />;
   return (
       <QuoteFormBox
         title="Request a New Quote"

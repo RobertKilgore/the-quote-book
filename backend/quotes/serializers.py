@@ -218,7 +218,6 @@ class QuoteSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         request = self.context['request']
         
-        print(validated_data)
 
         instance.quote_notes = request.data.get("quote_notes", "")
         instance.quote_source = request.data.get("quote_source", "")

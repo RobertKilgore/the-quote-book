@@ -22,8 +22,6 @@ export default function useRefreshAllQuoteContexts() {
     //refreshUnapprovedUserCount?.();
     refreshFlaggedCount?.();
     refreshUnapprovedCount?.();
-    } else {
-        console.log("not supe")
     }
   };
 

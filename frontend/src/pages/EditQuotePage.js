@@ -18,7 +18,6 @@ function EditQuotePage({loading}) {
     setError(message);
   };
 
-  if (loading) return <LoadingPage />;
   return (
       <QuoteFormBox
         title="Edit Quote"

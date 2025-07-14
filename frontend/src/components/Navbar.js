@@ -85,7 +85,7 @@ export default function Navbar({ loading }) {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white shadow h-16 flex items-center">
+      <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white shadow-b h-16 flex items-center overflow-clip">
         {isLoginLikePage ? (
           <div className="w-full text-center">
             <Link to="/home" className="text-lg font-semibold hover:underline">
@@ -162,7 +162,7 @@ export default function Navbar({ loading }) {
       </nav>
 
       {collapsed && !isLoginLikePage  &&(
-        <div className="fixed bottom-0 left-0 w-full h-20 bg-gray-800 text-white shadow-inner z-40 flex items-center">
+        <div className="fixed bottom-0 left-0 w-full h-20 bg-gray-800 text-white shadow-t z-40 flex items-center overflow-clip">
           <div className="w-full px-4">
             <NavButtons
               layout="bar"

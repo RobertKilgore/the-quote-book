@@ -5,8 +5,8 @@ import LoadingPage from "../pages/LoadingPage";
 import useAppContext from "../context/useAppContext";
 
 
-function CreateQuotePage({loading}) {
-  const { user, setUser, setError, setSuccess } = useAppContext();
+function CreateQuotePage() {
+  const { user, setUser, setError, setSuccess} = useAppContext();
   const navigate = useNavigate();
 
   const handleSuccess = (message, quoteId) => {
@@ -17,8 +17,7 @@ function CreateQuotePage({loading}) {
   const handleError = (message) => {
     setError(message);
   };
-  
-  if (loading) return <LoadingPage />;
+
   return ( 
       <QuoteFormBox
         title="Create a New Quote"
