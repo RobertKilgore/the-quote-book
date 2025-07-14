@@ -22,18 +22,15 @@ import Navbar from "./components/Navbar";
 import AdminRoute from "./components/AdminRoute";
 import PrivateRoute from "./components/PrivateRoute";
 
-import { useSignature } from "./context/SignatureContext";
-import { useUnapprovedQuotes } from "./context/UnapprovedQuoteContext";
-import { useUnapprovedUserCount } from "./context/UnapprovedUserContext";
-import { NavbarProvider } from "./context/NavbarContext";
+import useRefreshAllQuoteContexts from "./utils/refreshAllQuoteContexts";
 
+import ErrorBanner from "./components/ErrorBanner";
+import SuccessBanner from "./components/SuccessBanner";
 import "react-confirm-alert/src/react-confirm-alert.css";
 
 
 function App() {
-  const { refreshCount } = useSignature();
-  const { refreshUnapprovedCount } = useUnapprovedQuotes();
-  const { refreshUnapprovedUserCount } = useUnapprovedUserCount();
+  const refreshAll = useRefreshAllQuoteContexts();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -54,11 +51,7 @@ function App() {
 
   useEffect(() => {
     if (user) {
-      refreshCount(); // from useSignature
-    }
-    if (user?.isSuperuser){
-      refreshUnapprovedCount(); 
-      refreshUnapprovedUserCount();
+      refreshAll(); // from useSignature
     }
   }, [user]);
 
@@ -69,6 +62,8 @@ function App() {
   return (
     // Wrap the entire app with Router to provide routing context for useLocation
     <Router>
+      <ErrorBanner /> 
+      <SuccessBanner />
       <Navbar user={user} setUser={setUser} />
       <div className="pt-16 p-4">
         <AppRoutes user={user} loading={loading} setUser={setUser} />

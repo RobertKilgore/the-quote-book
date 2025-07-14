@@ -3,12 +3,16 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+
 import { SignatureProvider } from './context/SignatureContext';
 import { UnapprovedQuoteProvider } from "./context/UnapprovedQuoteContext";
 import { UnapprovedUserProvider } from "./context/UnapprovedUserContext";
 import { NavbarProvider } from "./context/NavbarContext";
-import { UnratedQuoteProvider }       from "./context/UnratedQuoteContext";
-import { FlaggedQuoteProvider }       from "./context/FlaggedQuoteContext";
+import { UnratedQuoteProvider } from "./context/UnratedQuoteContext";
+import { FlaggedQuoteProvider } from "./context/FlaggedQuoteContext";
+import { UserProvider } from "./context/UserContext";
+import { ErrorProvider } from "./context/ErrorContext";
+import { SuccessProvider } from "./context/SuccessContext";
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -20,7 +24,13 @@ root.render(
             <NavbarProvider>
               <UnratedQuoteProvider>
                 <FlaggedQuoteProvider>
-                    <App />
+                  <UserProvider>
+                    <ErrorProvider>
+                      <SuccessProvider>
+                        <App />
+                      </SuccessProvider>
+                    </ErrorProvider>
+                  </UserProvider>
                 </FlaggedQuoteProvider>
               </UnratedQuoteProvider>
             </NavbarProvider>
