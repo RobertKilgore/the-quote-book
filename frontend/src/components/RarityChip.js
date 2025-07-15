@@ -6,20 +6,22 @@ const rarityStyles = {
   legendary: "bg-yellow-100 text-yellow-800 border border-yellow-300",
 };
 
-const sizeStyles = {
-  small: "text-xs px-2 py-0.5",
-  large: "text-lg px-4 py-1.5",
-};
-
-export default function RarityChip({ rarity, size = "small" }) {
+export default function RarityChip({ rarity, size = "responsive" }) {
   if (!rarity) return null;
 
   const rarityStyle = rarityStyles[rarity.toLowerCase()] || rarityStyles.common;
-  const sizeStyle = sizeStyles[size] || sizeStyles.small;
+
+  const sizeClasses =
+    size === "large"
+      ? "text-lg px-4 py-1.5"
+      : size === "small"
+      ? "text-xs px-2 py-0.5"
+      : // ✅ Responsive: small by default, large on bigger screens
+        "text-xs px-2 py-0.5 sm:text-lg sm:px-4 sm:py-1.5";
 
   return (
     <div
-      className={`inline-block font-semibold rounded-full ${rarityStyle} ${sizeStyle}`}
+      className={`inline-block font-semibold rounded-full ${rarityStyle} ${sizeClasses}`}
     >
       {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
     </div>

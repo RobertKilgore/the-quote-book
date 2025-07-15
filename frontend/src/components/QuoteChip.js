@@ -101,13 +101,13 @@ export default function QuoteChip({
     >
       {showRarity && (
         <div className="mb-2">
-          <RarityChip rarity={rarity} />
+          <RarityChip rarity={rarity} size={"small"} />
         </div>
       )}
 
 {showVisibilityIcon && (
   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-    <VisibilityChip quote={quote} />
+    <VisibilityChip quote={quote} size={"large"} />
   </div>
 )}
 

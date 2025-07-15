@@ -48,7 +48,7 @@ export default function QuoteFormBox({
 
   useEffect(() => {
     if (isEdit && quoteId) {
-      api.get(`/api/quotes/${quoteId}/`, { withCredentials: true })
+      api.get(`/api/quotes/${quoteId}/edit/`, { withCredentials: true })
         .then((res) => {
           const quote = res.data;
           setDate(quote.date || "");

@@ -35,6 +35,18 @@ class IsApprovedUser(permissions.BasePermission):
 class IsSuperUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_superuser)
+    
+@api_view(['GET'])
+@permission_classes([IsSuperUser])
+def get_quote_for_editing(request, pk):
+    try:
+        quote = Quote.objects.get(pk=pk)
+    except Quote.DoesNotExist:
+        raise Http404("Quote not found")
+
+    # Force raw context (prevents redaction)
+    serializer = QuoteSerializer(quote, context={'request': request, 'raw': True})
+    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([IsApprovedUser])
@@ -356,8 +368,11 @@ class QuoteViewSet(viewsets.ModelViewSet):
         resp = super().update(request, *args, **kwargs)
 
         # if the quote is now approved, stamp approved_at
-        if instance.approved and instance.approved_at is None:
+        if instance.approved:
             instance.approved_at = timezone.now()
+            instance.save(update_fields=["approved_at"])
+        else:
+            instance.approved_at = None
             instance.save(update_fields=["approved_at"])
 
         return resp
@@ -379,8 +394,11 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
         resp = super().partial_update(request, *args, **kwargs)
 
-        if instance.approved and instance.approved_at is None:
+        if instance.approved:
             instance.approved_at = timezone.now()
+            instance.save(update_fields=["approved_at"])
+        else:
+            instance.approved_at = None
             instance.save(update_fields=["approved_at"])
 
         return resp

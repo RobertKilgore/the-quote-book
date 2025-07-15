@@ -19,8 +19,8 @@ export default function HomePage() {
         emptyTitle="All quiet here!"
         emptyMessage="No quotes yet, but the ink is ready!"
         quoteChipProps={{
-          showVisibilityIcon: true,
-          showSignButtons: true,
+          showVisibilityIcon: false,
+          showSignButtons: false,
         }}
       />
 

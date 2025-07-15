@@ -85,7 +85,7 @@ export default function Navbar({ loading }) {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white shadow-b h-16 flex items-center overflow-clip">
+      <nav className="fixed top-0 left-0 w-full z-50 bg-gray-800 text-white h-16 flex items-center ">
         {isLoginLikePage ? (
           <div className="w-full text-center">
             <Link to="/home" className="text-lg font-semibold hover:underline">
@@ -115,7 +115,7 @@ export default function Navbar({ loading }) {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setMenuOpen((prev) => !prev)}
-                  className="flex-none relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-lg hover:bg-gray-600 transition"
+                  className="flex-none relative inline-flex items-center justify-center w-11 h-11 rounded bg-gray-800 shadow-sm hover:bg-gray-600 transition"
                   title="User Menu"
                 >
                   <FaUserCircle size={20} />
@@ -162,7 +162,7 @@ export default function Navbar({ loading }) {
       </nav>
 
       {collapsed && !isLoginLikePage  &&(
-        <div className="fixed bottom-0 left-0 w-full h-20 bg-gray-800 text-white shadow-t z-40 flex items-center overflow-clip">
+        <div className="fixed bottom-0 left-0 w-full h-20 bg-gray-800 text-white z-40 flex items-center overflow-clip">
           <div className="w-full px-4">
             <NavButtons
               layout="bar"

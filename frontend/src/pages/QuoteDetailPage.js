@@ -31,7 +31,6 @@ function QuoteDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [quote, setQuote] = useState(null);
-  const refreshAll = useRefreshAllQuoteContexts();
 
   useEffect(() => {
     if (user && id) {
@@ -45,63 +44,6 @@ function QuoteDetailPage() {
         .finally(() => setLoading(false));
     }
   }, [id, user]);
-
-  const handleDelete = () => {
-    confirmAlert({
-      title: "Confirm Delete",
-      message: "Are you sure you want to delete this quote?",
-      buttons: [
-        {
-          label: "Cancel",
-          onClick: () => {},
-          className: "cancel-button",
-        },
-        {
-          label: "Yes, Delete it",
-          onClick: async () => {
-            try {
-              await api.delete(`/api/quotes/${id}/`, {
-                withCredentials: true,
-                headers: { "X-CSRFToken": getCookie("csrftoken") },
-              });
-              refreshAll();
-              navigate("/home");
-            } catch {
-              setError("Failed to delete quote.");
-            }
-          },
-          className: "delete-button",
-        },
-      ],
-      closeOnEscape: true,
-      closeOnClickOutside: true,
-    });
-  };
-
-  const handleFlagQuote = async () => {
-    try {
-      await api.post(`/quotes/${quote.id}/flag/`, {}, { 
-        withCredentials: true,
-        headers: { "X-CSRFToken": getCookie("csrftoken") }, 
-      });
-      const updated = { 
-        ...quote,
-        has_flagged: true,
-        is_flagged: true,
-        flag_count: (quote.flag_count ?? 0) + 1,
-        flagged_by_users: [...(quote.flagged_by_users ?? []), {
-          id: user.id,
-          name: user.name || user.username || "Unknown User"
-        }]
-      };
-      setQuote(updated);
-      refreshAll();
-    } catch {
-      setError("Failed to flag quote.");
-    }
-  };
-
-
  
   if (!quote || !user) return null;
 

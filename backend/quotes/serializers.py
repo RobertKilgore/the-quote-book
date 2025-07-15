@@ -33,6 +33,7 @@ class QuoteRankVoteSerializer(serializers.ModelSerializer):
 
 class QuoteLineSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(required=False, allow_null=True)
+    text = serializers.SerializerMethodField()
 
     class Meta:
         model = QuoteLine
@@ -42,6 +43,14 @@ class QuoteLineSerializer(serializers.ModelSerializer):
         # Assuming there's a matching Signature entry:
         sig = obj.quote.signatures.filter(user__username=obj.speaker_name).first()
         return sig.user.id if sig else None
+    
+    def get_text(self, obj):
+        raw = self.context.get("raw", False)
+        if obj.quote.redacted and not raw:
+            return "REDACTED"
+        return obj.text
+    
+
 
 class SignatureSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
@@ -270,9 +279,6 @@ class QuoteSerializer(serializers.ModelSerializer):
         # Manually ensure participants are serialized if missing
         data["participants"] = UserSerializer(instance.participants.all(), many=True).data
 
-        if instance.redacted:
-            for line in data.get('lines', []):
-                line['text'] = "REDACTED"
 
         return data
 

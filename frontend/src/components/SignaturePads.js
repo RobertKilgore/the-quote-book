@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from "react";
 import SignaturePadSingle from "./SignaturePadSingle";
 import useAppContext from "../context/useAppContext";
+import { MdScreenRotation } from "react-icons/md";
+
 
 export default function SignaturePads({ quote, setQuote }) {
   const { user } = useAppContext();
   const [visibleIds, setVisibleIds] = useState([]);
+  const [isTooNarrow, setIsTooNarrow] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      setIsTooNarrow(width < 500 && height > width); // portrait + narrow screen
+    };
+
+    checkSize();
+    window.addEventListener("resize", checkSize);
+    return () => window.removeEventListener("resize", checkSize);
+  }, []);
 
   /* refresh eligibility → merge into list (never shrink automatically) */
   useEffect(() => {
@@ -34,7 +49,13 @@ export default function SignaturePads({ quote, setQuote }) {
       : null;
   }
 
-  return (
+  return isTooNarrow ? (
+  <div className="p-6 text-center text-gray-700 bg-yellow-100 border border-yellow-300 rounded-lg shadow flex flex-col items-center justify-center space-y-3">
+    <MdScreenRotation className="text-5xl text-black-600 animate-pulse " />
+    <p className="text-lg font-semibold">Rotate Your Device</p>
+    <p className="text-sm text-gray-600">Please switch to landscape mode to sign.</p>
+  </div>
+  ) : (
     <div className="space-y-8">
       {toRender.map(p => (
         <SignaturePadSingle

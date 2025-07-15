@@ -10,15 +10,19 @@ export default function QuoteSignatures({ quote }) {
         >
           <span className="font-semibold">{p.name}</span>
           {p.refused ? (
-            <span className="text-red-600 font-medium mt-1">Refusal to sign</span>
+            <div className="h-12 mt-1 min-w-[248px] flex items-center justify-center">
+              <span className="text-red-600 font-medium text-center">Refusal to sign</span>
+            </div>
           ) : p.signature_image ? (
             <img
               src={`${p.signature_image}?${new Date().getTime()}`}
               alt="signature"
-              className="h-12 mt-1 max-w-[150px] object-contain"
+              className="h-12 mt-1 min-w-[248px] object-contain"
             />
           ) : (
-            <span className="text-gray-400 italic mt-1">No signature yet</span>
+            <div className="h-12 mt-1 min-w-[248px] flex items-center justify-center">
+              <span className="text-gray-400 italic text-center">No signature yet</span>
+            </div>
           )}
         </div>
       ))}

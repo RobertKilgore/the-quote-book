@@ -18,17 +18,24 @@ export default function QuoteMetadata({ quote }) {
     <div className="space-y-4">
       {/* Top row: rarity - title - visibility */}
       <div className="flex items-center justify-between w-full">
+<div className="flex items-center justify-between w-full gap-2">
+        {/* Rarity chip shrinks on small screens */}
         <div className="flex-shrink-0">
-          <RarityChip rarity={quote.rank} size="large" />
+          <RarityChip rarity={quote.rank} size="large sm:medium" />
         </div>
 
+        {/* Title */}
         <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
-          <h2 className="text-xl font-bold text-gray-800">Quote #{quote.id}</h2>
+          <h2 className="text-xl sm:text-lg font-bold text-gray-800 truncate">
+            Quote #{quote.id}
+          </h2>
         </div>
 
+        {/* Visibility chip shrinks on small screens */}
         <div className="flex-shrink-0">
-          <VisibilityChip quote={quote} />
+          <VisibilityChip quote={quote} size="large sm:medium" />
         </div>
+      </div>
       </div>
 
       {/* Date and Time */}
