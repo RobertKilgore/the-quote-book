@@ -138,7 +138,7 @@ export default function QuoteChip({
                 <span className="text-red-600 font-semibold">Refusal to sign</span>
               ) : p.signature_image ? (
                 <img
-                  src={p.signature_image}
+                  src={`${p.signature_image}?${new Date().getTime()}`}
                   alt="signature"
                   className="h-6 max-w-[120px] object-contain"
                 />
