@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTrash, FaEdit, FaFlag } from "react-icons/fa";
 import useAppContext from "../context/useAppContext";
+import { showConfirm } from "../components/ConfirmDialog";
 import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
 import api from "../api/axios";
 import getCookie from "../utils/getCookie";
@@ -19,67 +20,45 @@ export default function QuoteActions({ quote, setQuote }) {
     return res.data;
   };
 
-  const handleDelete = () => {
-    confirmAlert({
+ const handleDelete = () => {
+    showConfirm({
       title: "Confirm Delete",
       message: "Are you sure you want to delete this quote?",
-      buttons: [
-        {
-          label: "Cancel",
-          onClick: () => {},
-          className: "cancel-button",
-        },
-        {
-          label: "Yes, Delete it",
-          onClick: async () => {
-            try {
-              await api.delete(`/api/quotes/${quote.id}/`, {
-                withCredentials: true,
-                headers: { "X-CSRFToken": getCookie("csrftoken") },
-              });
-              refreshAll();
-              setSuccess(`Success: Quote ${quote.id} Deleted`);
-              navigate("/home");
-            } catch {
-              setError("Failed to delete quote.");
-            }
-          },
-          className: "delete-button",
-        },
-      ],
-      closeOnEscape: true,
-      closeOnClickOutside: true,
+      confirmText: "Yes, Delete it",
+      confirmClassName: "delete-button",
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/quotes/${quote.id}/`, {
+            withCredentials: true,
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+          });
+          refreshAll();
+          setSuccess(`Success: Quote ${quote.id} Deleted`);
+          navigate("/home");
+        } catch {
+          setError("Failed to delete quote.");
+        }
+      },
     });
   };
 
   const handleFlagQuote = async () => {
-    confirmAlert({
+    showConfirm({
       title: "Flag For Review",
       message: "Are you sure you want to flag this quote for review?",
-      buttons: [
-        {
-          label: "Cancel",
-          onClick: () => {},
-          className: "cancel-button",
-        },
-        {
-          label: "Yes, Flag it",
-          onClick: async () => {
-            try {
-              await api.post(`/quotes/${quote.id}/flag/`, {}, {
-                withCredentials: true,
-                headers: { "X-CSRFToken": getCookie("csrftoken") },
-              });
-              refreshQuote();
-            } catch {
-              setError("Failed to flag quote.");
-            }
-          },
-          className: "delete-button",
-        },
-      ],
-      closeOnEscape: true,
-      closeOnClickOutside: true,
+      confirmText: "Yes, Flag it",
+      confirmClassName: "delete-button",
+      onConfirm: async () => {
+        try {
+          await api.post(`/quotes/${quote.id}/flag/`, {}, {
+            withCredentials: true,
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+          });
+          refreshQuote();
+        } catch {
+          setError("Failed to flag quote.");
+        }
+      },
     });
   };
 

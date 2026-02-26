@@ -11,7 +11,6 @@ import RarityChip from "../components/RarityChip";
 import useAppContext from "../context/useAppContext";
 import QuoteRarityVote from "../components/QuoteRarityVote";
 import QuoteBody from "../components/QuoteBody"
-import QuoteSignaturePad from "../components/QuoteSignaturePad";
 import SignaturePads from "../components/SignaturePads";
 import QuoteMetaMetadata from "../components/QuoteMetaMetadata";
 import QuoteActions from "../components/QuoteActions";
@@ -50,7 +49,7 @@ function QuoteDetailPage() {
 
   return (
       <div className={`max-w-4xl mx-auto mt-10 p-6 rounded-xl shadow-lg space-y-6 transition-all duration-300 ${rarityColors[quote?.rank] || "bg-white"}`}>
-        <QuoteBody quote={quote}/>
+        <QuoteBody quote={quote} setQuote={setQuote} />
         <SignaturePads quote={quote} setQuote={setQuote} />
         {/* <QuoteSignaturePad quote={quote} setQuote={setQuote} /> */}
         <QuoteRarityVote quote={quote} setQuote={setQuote} />

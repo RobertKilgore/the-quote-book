@@ -58,10 +58,10 @@ class SignatureSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Signature
-        fields = ['id', 'user', 'signature_image', 'refused', 'signed_at', 'name']
+        fields = ['id', 'user', 'guest_name', 'signature_image', 'refused', 'signed_at', 'name']
 
     def get_name(self, obj):
-        return obj.user.get_full_name() or obj.user.username
+        return obj.guest_name or (obj.user.get_full_name() if obj.user else "")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -92,9 +92,6 @@ class AccountRequestSerializer(serializers.ModelSerializer):
 class QuoteSerializer(serializers.ModelSerializer):
     lines = QuoteLineSerializer(many=True, required=False)
     signatures = SignatureSerializer(many=True, read_only=True)
-    # participants = serializers.PrimaryKeyRelatedField(
-    #     queryset=User.objects.all(), many=True, write_only=True, required=False
-    # )
     participants_detail = UserSerializer(source='participants', many=True, read_only=True)
     participant_status = serializers.SerializerMethodField()
     created_by = UserSerializer(read_only=True)
@@ -107,13 +104,14 @@ class QuoteSerializer(serializers.ModelSerializer):
     quote_notes = serializers.CharField(required=False, allow_blank=True)
     quote_source = serializers.URLField(required=False, allow_blank=True)
     quote_source_image = serializers.ImageField(required=False, allow_null=True)
+    guest_signatures   = serializers.SerializerMethodField()
 
     class Meta:
         model = Quote
         fields = [
             'id', 'created_by', 'participants', 'participants_detail', 'created_at',
             'date', 'time', 'visible', 'redacted', 'approved', 'approved_at',
-            'lines', 'signatures', 'participant_status', 'is_flagged', 'has_flagged', "flag_count",
+            'lines', 'signatures', 'participant_status', 'guest_signatures', 'is_flagged', 'has_flagged', "flag_count",
             "flagged_by_users", 'rank', 'rank_votes', 'user_rarity_vote', 'quote_notes', 'quote_source', 'quote_source_image'
         ]
         read_only_fields = ['created_by', 'signatures', 'created_at']
@@ -196,8 +194,20 @@ class QuoteSerializer(serializers.ModelSerializer):
                 "signature_image": sig.signature_image.url if sig and sig.signature_image else None,
                 "refused": sig.refused if sig else False,
                 "signed_at": sig.signed_at if sig else None,
+                "signature_id": sig.id if sig else None,
             })
         return result
+    
+    def get_guest_signatures(self, quote):
+        return [
+            {
+                "id": sig.id,
+                "name": sig.guest_name,
+                "signature_image": sig.signature_image.url if sig.signature_image else None,
+                "refused": sig.refused,
+            }
+            for sig in quote.signatures.filter(user__isnull=True)
+        ]
 
 
     def create(self, validated_data):

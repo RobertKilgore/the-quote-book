@@ -36,6 +36,32 @@ class IsSuperUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_superuser)
     
+def normalize_name(name: str) -> str:
+    # trim + collapse multiple spaces
+    return " ".join((name or "").strip().split())
+
+def guest_name_conflicts_with_user(guest_name: str) -> bool:
+    """
+    True if guest_name matches any real user's username OR full name (case-insensitive).
+    """
+    gn = normalize_name(guest_name)
+    if not gn:
+        return False
+
+    gn_lower = gn.lower()
+
+    # username match
+    if User.objects.filter(username__iexact=gn).exists():
+        return True
+
+    # full name match (first + last)
+    for u in User.objects.all().only("first_name", "last_name", "username"):
+        full = normalize_name(f"{u.first_name} {u.last_name}")  # may be ""
+        if full and full.lower() == gn_lower:
+            return True
+
+    return False
+    
 @api_view(['GET'])
 @permission_classes([IsSuperUser])
 def get_quote_for_editing(request, pk):
@@ -228,75 +254,130 @@ def unapproved_user_count(request):
 @permission_classes([IsApprovedUser])
 def refuse_signature(request):
     quote_id = request.data.get('quote_id')
-    sign_as_user_id = request.data.get('sign_as_user_id')
+    sign_as_user_id = request.data.get('sign_as_user_id')  # Optional
+    guest_name = request.data.get('guest_name')             # Optional
 
     if not quote_id:
         return Response({'error': 'Quote ID is required'}, status=400)
 
+    if not sign_as_user_id and not guest_name:
+        return Response({'error': 'Must provide either sign_as_user_id or guest_name'}, status=400)
+
     quote = get_object_or_404(Quote, id=quote_id)
 
     # Determine actual signer
-    if request.user.is_superuser and sign_as_user_id:
-        try:
-            signer = User.objects.get(id=sign_as_user_id)
-        except User.DoesNotExist:
-            return Response({'error': 'Selected user not found'}, status=404)
+    if sign_as_user_id:
+        # Admin signing on behalf of user
+        if request.user.is_superuser:
+            try:
+                signer = User.objects.get(id=sign_as_user_id)
+            except User.DoesNotExist:
+                return Response({'error': 'Selected user not found'}, status=404)
+        else:
+            signer = request.user
+
+        # Verify user is a participant
+        if signer not in quote.participants.all():
+            return Response({'error': 'User is not a participant for this quote'}, status=403)
+
+        # Check for duplicate
+        if Signature.objects.filter(quote=quote, user=signer).exists():
+            return Response({'error': 'Signature already exists'}, status=400)
+
+        # Save refusal
+        Signature.objects.create(quote=quote, user=signer, refused=True)
+
     else:
-        signer = request.user
+        guest_name = normalize_name(guest_name)
+        if not guest_name:
+            return Response({'error': 'Guest name cannot be empty'}, status=400)
 
-    # Check signer is a participant
-    if signer not in quote.participants.all():
-        return Response({'error': 'User is not a participant for this quote'}, status=403)
+        # ✅ block impersonation of real users (username OR full name)
+        if guest_name_conflicts_with_user(guest_name):
+            return Response({'error': 'Guest name conflicts with an existing user'}, status=400)
 
-    # Check if already signed/refused
-    if Signature.objects.filter(quote=quote, user=signer).exists():
-        return Response({'error': 'Signature already exists'}, status=400)
+        # ✅ prevent duplicate guest (case-insensitive) on this quote
+        if Signature.objects.filter(
+            quote=quote,
+            user__isnull=True,
+            guest_name__iexact=guest_name
+        ).exists():
+            return Response({'error': 'Guest has already responded'}, status=400)
 
-    # Save refusal
-    Signature.objects.create(quote=quote, user=signer, refused=True)
+        Signature.objects.create(quote=quote, user=None, guest_name=guest_name, refused=True)
+
     return Response({'success': 'Refusal recorded'})
 
+
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsApprovedUser])
 def submit_signature(request):
     try:
         quote_id = request.data.get('quote_id')
-        user_id = request.data.get('sign_as_user_id')
+        user_id = request.data.get('sign_as_user_id')  # Optional
+        guest_name = request.data.get('guest_name')     # Optional
         image_data = request.data.get('signature_image')
 
-        if not quote_id or not user_id or not image_data:
-            return Response({"error": "Missing required fields"}, status=400)
+        if not quote_id or not image_data:
+            return Response({"error": "Missing quote_id or signature_image"}, status=400)
 
-        quote = Quote.objects.get(id=quote_id)
-        signer = User.objects.get(id=user_id)
+        if not user_id and not guest_name:
+            return Response({"error": "Must include either user_id or guest_name"}, status=400)
 
-        # Decode and prepare new image
+        quote = get_object_or_404(Quote, id=quote_id)
+
+        # Prepare the image file
         format, imgstr = image_data.split(';base64,')
         ext = format.split('/')[-1]
-        data = ContentFile(base64.b64decode(imgstr), name=f'sign_{signer.id}_{quote_id}.{ext}')
+        name_key = user_id or guest_name.replace(" ", "_")
+        data = ContentFile(base64.b64decode(imgstr), name=f'sign_{name_key}_{quote_id}.{ext}')
 
-        # Fetch or create signature object
-        sig, created = Signature.objects.get_or_create(quote=quote, user=signer)
+        # Determine signer
+        signer = User.objects.get(id=user_id) if user_id else None
 
-        # Overwrite previous signature
+        # Create or get existing signature
+        if signer:
+            sig, _ = Signature.objects.get_or_create(quote=quote, user=signer)
+            sig.guest_name = ""  # Clear any previous guest name
+        else:
+            guest_name = normalize_name(guest_name)
+            if not guest_name:
+                return Response({'error': 'Guest name cannot be empty'}, status=400)
+
+            # ✅ block impersonation of real users (username OR full name)
+            if guest_name_conflicts_with_user(guest_name):
+                return Response({'error': 'Guest name conflicts with an existing user'}, status=400)
+
+            # ✅ prevent duplicate guest (case-insensitive) on this quote
+            if Signature.objects.filter(
+                quote=quote,
+                user__isnull=True,
+                guest_name__iexact=guest_name
+            ).exists():
+                return Response({'error': 'Guest has already responded'}, status=400)
+
+            sig, _ = Signature.objects.get_or_create(
+                quote=quote,
+                user=None,
+                guest_name=guest_name
+            )
+
+        # Replace image
         if sig.signature_image:
-            sig.signature_image.delete(save=False)  # clean up old file
+            sig.signature_image.delete(save=False)
 
         sig.signature_image = data
-        sig.refused = False  # mark as signed
+        sig.refused = False
         sig.save()
 
         return Response({"success": True}, status=200)
 
     except Exception as e:
         import traceback
-        traceback_str = traceback.format_exc()
-        return Response({"error": str(e), "trace": traceback_str}, status=400)
-
-    except Exception as e:
-        import traceback
-        traceback_str = traceback.format_exc()
-        return Response({"error": str(e), "trace": traceback_str}, status=400)
+        return Response({
+            "error": str(e),
+            "trace": traceback.format_exc()
+        }, status=400)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -491,6 +572,18 @@ class SignatureViewSet(viewsets.ModelViewSet):
     queryset = Signature.objects.all()
     serializer_class = SignatureSerializer
     permission_classes = [IsApprovedUser]
+
+
+    @action(detail=True, methods=["post"], url_path="admin-clear")
+    def admin_clear(self, request, pk=None):
+        # admin-only
+        if not request.user.is_superuser:
+            raise PermissionDenied("Admins only.")
+
+        sig = self.get_object()
+
+        sig.delete()
+        return Response({"ok": True})
 
 class QuoteLineViewSet(viewsets.ModelViewSet):
     queryset = QuoteLine.objects.all()

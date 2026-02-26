@@ -5,7 +5,7 @@ import QuoteLines from "./QuoteLines";
 import QuoteNotes from "./QuoteNotes";
 import QuoteSignatures from "./QuoteSignatures";
 
-export default function QuoteBody({ quote }) {
+export default function QuoteBody({ quote, setQuote }) {
   const [showImageModal, setShowImageModal] = useState(false);
 
   if (!quote) return null;
@@ -22,7 +22,7 @@ export default function QuoteBody({ quote }) {
     <div>
       <QuoteMetadata quote={quote} />
       <QuoteLines quote={quote} />
-      <QuoteSignatures quote={quote} />
+      <QuoteSignatures quote={quote} setQuote={setQuote} />
       <QuoteNotes quote={quote} setShowImageModal={setShowImageModal} />
 
       {showImageModal && (

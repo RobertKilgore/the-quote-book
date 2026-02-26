@@ -94,6 +94,7 @@ export default function QuoteChip({
   const rarity = quote.rank || "common";
   const bgColorClass = showRarity ? rarityColorMap[rarity] : "bg-white";
 
+  
   return (
     <div
       className={`relative ${bgColorClass} p-4 pr-12 shadow rounded hover:brightness-95 transition cursor-pointer duration-300 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}
@@ -105,11 +106,11 @@ export default function QuoteChip({
         </div>
       )}
 
-{showVisibilityIcon && (
-  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-    <VisibilityChip quote={quote} size={"large"} />
-  </div>
-)}
+      {showVisibilityIcon && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <VisibilityChip quote={quote} size={"large"} />
+        </div>
+      )}
 
       {quote.lines.map((line) => (
         <div key={line.id || `${line.speaker_name}-${line.text}`} className="mb-1">
@@ -127,36 +128,52 @@ export default function QuoteChip({
       </p>
 
       <div className="mt-2 flex flex-wrap gap-2">
-        {quote.participant_status?.length > 0 ? (
-          quote.participant_status.map((p) => (
-            <div
-              key={p.user}
-              className="bg-gray-100 border border-gray-300 px-3 py-1 rounded-lg text-sm text-gray-800 flex items-center gap-2"
-            >
-              <span className="font-semibold">{p.name}</span>
-              {p.refused ? (
-                <span className="text-red-600 font-semibold">Refusal to sign</span>
-              ) : p.signature_image ? (
-                <img
-                  src={`${p.signature_image}?${new Date().getTime()}`}
-                  alt="signature"
-                  className="h-6 max-w-[120px] object-contain"
-                />
-              ) : (
-                <span className="italic text-gray-400">No signature yet</span>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="text-sm text-gray-400 italic">No signatures needed</div>
-        )}
+        {/* ─── User Signatures ─── */}
+        {quote.participant_status?.map((p) => (
+          <div
+            key={p.user}
+            className="bg-gray-100 border border-gray-300 px-3 py-1 rounded-lg text-sm text-gray-800 flex items-center gap-2"
+          >
+            <span className="font-semibold">{p.name}</span>
+            {p.refused ? (
+              <span className="text-red-600 font-semibold">Refusal to sign</span>
+            ) : p.signature_image ? (
+              <img
+                src={`${p.signature_image}?${new Date().getTime()}`}
+                alt="signature"
+                className="h-6 max-w-[120px] object-contain"
+              />
+            ) : (
+              <span className="italic text-gray-400">No signature yet</span>
+            )}
+          </div>
+        ))}
+
+        {quote.guest_signatures?.map((g, idx) => (
+          <div
+            key={`${g.guest_name || g.name || 'guest'}-${g.signed_at || idx}`}
+            className="bg-gray-50 border border-gray-300 px-3 py-1 rounded-lg text-sm text-gray-800 flex items-center gap-2"
+          >
+            <span className="font-semibold">{g.guest_name || g.name || "Unknown Guest"}</span>
+
+            {g.refused ? (
+              <span className="text-red-600 font-semibold">Refusal to sign</span>
+            ) : g.signature_image ? (
+              <img
+                src={`${g.signature_image}?${new Date().getTime()}`}
+                alt="guest signature"
+                className="h-6 max-w-[120px] object-contain"
+              />
+            ) : (
+              <span className="italic text-gray-400">No signature yet</span>
+            )}
+          </div>
+        ))}
       </div>
 
+      {/* ─── Action Buttons ─── */}
       {(shouldShowSignButton || shouldShowRefuseButton || (showDeleteButton && user?.isSuperuser)) && (
-        <div
-          className="mt-4 w-full flex justify-between items-center"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="mt-4 w-full flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
           <div className="flex gap-3">
             {shouldShowSignButton && (
               <button
@@ -166,7 +183,6 @@ export default function QuoteChip({
                 Sign
               </button>
             )}
-
             {shouldShowRefuseButton && (
               <button
                 className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors duration-200"
@@ -177,16 +193,14 @@ export default function QuoteChip({
             )}
           </div>
 
-          <div>
-            {showDeleteButton && user?.isSuperuser && (
-              <button
-                onClick={handleDelete}
-                className="px-4 py-1.5 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-full transition-colors duration-200"
-              >
-                Delete
-              </button>
-            )}
-          </div>
+          {showDeleteButton && user?.isSuperuser && (
+            <button
+              onClick={handleDelete}
+              className="px-4 py-1.5 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-full transition-colors duration-200"
+            >
+              Delete
+            </button>
+          )}
         </div>
       )}
     </div>

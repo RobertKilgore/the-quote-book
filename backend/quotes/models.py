@@ -76,10 +76,22 @@ class QuoteLine(models.Model):
 
 class Signature(models.Model):
     quote = models.ForeignKey(Quote, on_delete=models.CASCADE, related_name='signatures')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    guest_name = models.CharField(max_length=255, blank=True)  # New field for guest
     signature_image = models.ImageField(upload_to='signatures/', null=True, blank=True)
     refused = models.BooleanField(default=False)  # ✅ NEW
     signed_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    def is_guest(self):
+        return self.user is None and bool(self.guest_name)
+    
+    def admin_clear(self):
+        self.refused = False
+        self.signed_at = None
+        if self.signature_image:
+            self.signature_image.delete(save=False)  # deletes file
+        self.signature_image = None
+        self.save(update_fields=["refused", "signed_at", "signature_image"])
 
     def __str__(self):
         return f"{self.user.username} {'refused' if self.refused else 'signed'} on {self.signed_at}"
