@@ -74,6 +74,21 @@ class UserSerializer(serializers.ModelSerializer):
         full_name = f"{obj.first_name} {obj.last_name}".strip()
         return full_name if full_name else obj.username
 
+        
+class UserSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email"]
+        read_only_fields = ["email"]  # keep email read-only for now (you said “eventually preferences”)
+
+    def validate_username(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Username cannot be empty.")
+        if User.objects.filter(username__iexact=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Username is already taken.")
+        return value
+
 class AccountRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountRequest

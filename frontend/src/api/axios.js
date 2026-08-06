@@ -1,16 +1,13 @@
 // src/utils/api.js
 import axios from "axios";
 
-// Detect current host dynamically (localhost, 127.0.0.1, or LAN IP)
-const host = window.location.hostname; // 'localhost' or '127.0.0.1' or LAN IP
-const port = "8000";                    // Django backend port
-
-// Base URL automatically adapts to current host
-const baseURL = `http://${host}:${port}`;
+export function getApiBaseUrl() {
+  return process.env.REACT_APP_API_BASE_URL || "/";
+}
 
 // Create Axios instance
 const api = axios.create({
-  baseURL,
+  baseURL: getApiBaseUrl(),
   withCredentials: true, // ✅ send cookies/session automatically
 });
 

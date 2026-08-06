@@ -23,6 +23,7 @@ import base64
 from .models import AccountRequest
 from .serializers import AccountRequestSerializer
 from scheduler.jobs import auto_refuse_stale_quotes
+from .serializers import UserSettingsSerializer
 from .serializers import QuoteRankVoteSerializer
 from .models import update_quote_rank, RARITY_CHOICES
 
@@ -386,7 +387,17 @@ def submitted_unapproved_quotes(request):
     serializer = QuoteSerializer(quotes, many=True)
     return Response(serializer.data)
 
+class MeView(APIView):
+    permission_classes = [IsApprovedUser]  # or IsAuthenticated if you want even unapproved users to edit settings
 
+    def get(self, request):
+        return Response(UserSettingsSerializer(request.user).data)
+
+    def patch(self, request):
+        ser = UserSettingsSerializer(request.user, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):

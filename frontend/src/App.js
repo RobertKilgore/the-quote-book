@@ -17,6 +17,7 @@ import UsersPage from "./pages/UsersPage";
 import DebugJobsPage from "./pages/DebugJobsPage";
 import UnratedQuotesPage from "./pages/UnratedQuotesPage";
 import FlaggedQuotesPage from "./pages/FlaggedQuotesPage";
+import UserSettingsPage from "./pages/UserSettingsPage";
 
 
 import useAppContext from "./context/useAppContext";
@@ -82,6 +83,15 @@ function AppRoutes({ loading }) {
         element={
           <PrivateRoute loading={loading}>
             <HomePage loading={loading}/>
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute loading={loading}>
+            <UserSettingsPage loading={loading} />
           </PrivateRoute>
         }
       />

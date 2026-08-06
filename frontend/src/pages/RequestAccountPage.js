@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
 import useAppContext from "../context/useAppContext";
 import getCookie from "../utils/getCookie";
 
@@ -17,8 +17,8 @@ const RequestAccountPage = () => {
     setError(null);
 
     try {
-      await axios.post(
-        "http://127.0.0.1:8000/api/account-requests/",
+      await api.post(
+        "/api/account-requests/",
         {
           first_name: firstName,
           last_name: lastName,

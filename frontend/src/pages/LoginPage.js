@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
 import getCookie from "../utils/getCookie";
-import LoadingPage from "../pages/LoadingPage";
 import useAppContext from "../context/useAppContext";
 
 function LoginPage() {
@@ -23,8 +22,8 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
     try {
-      await axios.post(
-        "http://127.0.0.1:8000/auth/login/",
+      await api.post(
+        "/auth/login/",
         { username, password },
         {
           withCredentials: true,
@@ -34,7 +33,7 @@ function LoginPage() {
         }
       );
 
-      const res = await axios.get("http://127.0.0.1:8000/api/test-auth/", {
+      const res = await api.get("/api/test-auth/", {
         withCredentials: true,
       });
 

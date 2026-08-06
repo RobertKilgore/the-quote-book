@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/axios"; // your axios wrapper
-import { useError } from "./ErrorContext";
 
 
 
@@ -12,7 +11,7 @@ export function UserProvider({ children }) {
   //const [error, setError] = useError();
 
   useEffect(() => {
-    api.get("http://127.0.0.1:8000/api/test-auth/", { withCredentials: true })
+    api.get("/api/test-auth/", { withCredentials: true })
       .then(res => {
         setUser({
           id: res.data.id,

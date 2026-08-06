@@ -119,6 +119,7 @@ export default function SignaturePadSingle({
         withCredentials:true,
         headers:{ "X-CSRFToken": getCookie("csrftoken") }
       });
+      setError(null)
       await refreshQuote(); refreshAll();
       /* For guests we keep pad alive for next signer; for users we fade */
       if (isGuest) {

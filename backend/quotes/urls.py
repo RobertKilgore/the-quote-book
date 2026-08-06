@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import QuoteViewSet, QuoteLineViewSet, SignatureViewSet, UserViewSet
 from .views import LogoutView
 from .views import AccountRequestViewSet
+from .views import MeView
 
 
 router = DefaultRouter()
@@ -15,6 +16,7 @@ router.register(r'admin/users', UserViewSet, basename='admin-users')
 
 urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('me/', MeView.as_view(), name='me'),
     path('', include(router.urls)),
     #path('api/', include('quotes.urls')),  # optional for later
 ]
