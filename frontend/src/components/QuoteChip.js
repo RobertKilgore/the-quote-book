@@ -61,7 +61,7 @@ export default function QuoteChip({
           setIsRemoved(true);
           onRemove?.(); 
         } else {
-          api.get(`/api/quotes/${quote.id}/`, { withCredentials: true })
+          api.get(`/api/quotes/${quote.id}/`, { withCredentials: true, cache: false })
             .then(res => {
               setQuote(res.data);
               setFadeIn(true);

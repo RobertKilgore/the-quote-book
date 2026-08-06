@@ -26,6 +26,12 @@ api.interceptors.request.use(config => {
 
 const originalGet = api.get.bind(api);
 api.get = function getWithCache(url, config = {}) {
+  const shouldUseCache = config.cache !== false && config.skipCache !== true;
+
+  if (!shouldUseCache) {
+    return originalGet(url, config);
+  }
+
   const cacheKey = getRequestCacheKey({ method: "get", url, params: config.params });
   const cached = requestCache.get(cacheKey);
   if (cached) {

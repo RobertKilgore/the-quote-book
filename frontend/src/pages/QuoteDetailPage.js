@@ -35,7 +35,7 @@ function QuoteDetailPage() {
     if (user && id) {
       setQuote(null);
       api
-        .get(`/api/quotes/${id}/`, { withCredentials: true })
+        .get(`/api/quotes/${id}/`, { withCredentials: true, cache: false })
         .then((res) => setQuote(res.data))
         .catch(() =>
           setError("This quote is either private or could not be found.")

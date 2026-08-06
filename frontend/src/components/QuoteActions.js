@@ -14,7 +14,7 @@ export default function QuoteActions({ quote, setQuote }) {
   const refreshAll = useRefreshAllQuoteContexts();
 
   const refreshQuote = async () => {
-    const res = await api.get(`/api/quotes/${quote.id}/`, { withCredentials: true });
+    const res = await api.get(`/api/quotes/${quote.id}/`, { withCredentials: true, cache: false });
     setQuote(res.data);
     refreshAll();
     return res.data;

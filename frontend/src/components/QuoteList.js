@@ -71,7 +71,7 @@ export default function QuoteListPage({
     setQuotes([]);
     setNextPage(null);
 
-    api.get(buildRequestUrl(fetchUrl), { withCredentials: true })
+    api.get(buildRequestUrl(fetchUrl), { withCredentials: true, cache: false })
       .then(res => {
         const data = res.data;
         const items = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
@@ -91,7 +91,7 @@ export default function QuoteListPage({
     if (!nextPage || loadingMore) return;
 
     setLoadingMore(true);
-    api.get(buildRequestUrl(nextPage), { withCredentials: true })
+    api.get(buildRequestUrl(nextPage), { withCredentials: true, cache: false })
       .then(res => {
         const data = res.data;
         const items = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];

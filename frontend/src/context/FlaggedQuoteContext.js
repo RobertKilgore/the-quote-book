@@ -7,12 +7,12 @@ export function FlaggedQuoteProvider({ children }) {
   const [flaggedCount, setFlaggedCount] = useState(0);
 
   const refreshFlaggedCount = useCallback(() => {
-    api.get("/quotes/flagged/", { withCredentials: true })
+    api.get("/quotes/flagged/count/", { withCredentials: true })
       .then(res => {
-        setFlaggedCount(res.data.length);
+        setFlaggedCount(res.data.count ?? 0);
       })
       .catch((error) => {
-        console.error("Failed to fetch unapproved quote count", error);
+        console.error("Failed to fetch flagged quote count", error);
         setFlaggedCount(0);
       });
   }, []);
