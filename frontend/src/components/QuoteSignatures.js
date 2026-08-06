@@ -57,7 +57,7 @@ export default function QuoteSignatures({ quote, setQuote }) {
         </div>
       ) : signature_image ? (
         <img
-          src={`${signature_image}?${Date.now()}`}
+          src={signature_image}
           alt="signature"
           className="h-12 mt-1 min-w-[248px] object-contain"
         />

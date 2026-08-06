@@ -1,5 +1,5 @@
 // src/context/SignatureContext.js
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "../api/axios";
 
 const SignatureContext = createContext();
@@ -11,7 +11,7 @@ export function useSignature() {
 export function SignatureProvider({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
 
-  const refreshCount = async () => {
+  const refreshCount = useCallback(async () => {
     try {
       const res = await api.get("/api/signatures/pending/count/", {
         withCredentials: true
@@ -20,11 +20,11 @@ export function SignatureProvider({ children }) {
     } catch (err) {
       console.error("Failed to fetch pending signature count");
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshCount();
-  }, []);
+  }, [refreshCount]);
 
   return (
     <SignatureContext.Provider value={{ pendingCount, refreshCount }}>

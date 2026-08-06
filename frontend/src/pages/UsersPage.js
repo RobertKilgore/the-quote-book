@@ -34,7 +34,7 @@ export default function AdminApprovalPage() {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },
       });
-      setUsers(res.data);
+      setUsers(Array.isArray(res.data) ? res.data : res.data?.results || []);
     } catch (err) {
       setError("Failed to load active users.");
     } finally {
@@ -47,7 +47,7 @@ export default function AdminApprovalPage() {
       const res = await api.get("/api/account-requests/", {
         withCredentials: true,
       });
-      setRequests(res.data);
+      setRequests(Array.isArray(res.data) ? res.data : res.data?.results || []);
     } catch (err) {
       setError("Failed to load account requests.");
     } finally {

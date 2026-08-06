@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import api from "../api/axios";
 
 const FlaggedQuoteContext = createContext();
@@ -6,7 +6,7 @@ const FlaggedQuoteContext = createContext();
 export function FlaggedQuoteProvider({ children }) {
   const [flaggedCount, setFlaggedCount] = useState(0);
 
-  const refreshFlaggedCount = () => {
+  const refreshFlaggedCount = useCallback(() => {
     api.get("/quotes/flagged/", { withCredentials: true })
       .then(res => {
         setFlaggedCount(res.data.length);
@@ -15,11 +15,11 @@ export function FlaggedQuoteProvider({ children }) {
         console.error("Failed to fetch unapproved quote count", error);
         setFlaggedCount(0);
       });
-  };
+  }, []);
 
   useEffect(() => {
     refreshFlaggedCount();
-  }, []);
+  }, [refreshFlaggedCount]);
 
   return (
     <FlaggedQuoteContext.Provider value={{ flaggedCount, refreshFlaggedCount }}>

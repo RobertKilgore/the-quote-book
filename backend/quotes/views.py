@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
+from rest_framework.pagination import PageNumberPagination
 from .models import Quote, QuoteLine, Signature, QuoteRankVote
 from .serializers import QuoteSerializer, QuoteLineSerializer, SignatureSerializer
 from rest_framework.permissions import IsAuthenticated
@@ -16,7 +17,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.core.files.base import ContentFile
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField, F
 from rest_framework.exceptions import PermissionDenied
 from django.utils import timezone 
 import base64
@@ -27,6 +28,24 @@ from .serializers import UserSettingsSerializer
 from .serializers import QuoteRankVoteSerializer
 from .models import update_quote_rank, RARITY_CHOICES
 
+
+
+class QuoteListPagination(PageNumberPagination):
+    page_size = 2
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+def paginate_queryset_response(request, queryset, serializer_class, context=None):
+    paginator = QuoteListPagination()
+    page = paginator.paginate_queryset(queryset, request, view=None)
+
+    if page is not None:
+        serializer = serializer_class(page, many=True, context=context or {})
+        return paginator.get_paginated_response(serializer.data)
+
+    serializer = serializer_class(queryset, many=True, context=context or {})
+    return Response(serializer.data)
 
 
 class IsApprovedUser(permissions.BasePermission):
@@ -138,8 +157,12 @@ def list_unrated_quotes(request):
         .distinct()
         .order_by("-created_at")
     )
-    data = QuoteSerializer(quotes, many=True, context={"request": request}).data
-    return Response(data)
+    return paginate_queryset_response(
+        request,
+        quotes,
+        QuoteSerializer,
+        context={"request": request},
+    )
 
 @api_view(["GET"])
 @permission_classes([IsSuperUser])
@@ -149,8 +172,12 @@ def list_flagged_quotes(request):
         .filter(is_flagged=True)
         .order_by("-created_at")
     )
-    data = QuoteSerializer(quotes, many=True, context={"request": request}).data
-    return Response(data)
+    return paginate_queryset_response(
+        request,
+        quotes,
+        QuoteSerializer,
+        context={"request": request},
+    )
 
 @api_view(['GET'])
 @permission_classes([IsSuperUser])
@@ -205,9 +232,13 @@ def unapproved_quotes(request):
     if not request.user.is_superuser:
         return Response({'error': 'Forbidden'}, status=403)
 
-    quotes = Quote.objects.filter(approved=False)
-    serializer = QuoteSerializer(quotes, many=True, context={'request': request})
-    return Response(serializer.data)
+    quotes = Quote.objects.filter(approved=False).order_by('-created_at')
+    return paginate_queryset_response(
+        request,
+        quotes,
+        QuoteSerializer,
+        context={'request': request},
+    )
 
 @api_view(['GET'])
 @permission_classes([IsApprovedUser])
@@ -217,10 +248,14 @@ def pending_signatures(request):
         participants=request.user
     ).exclude(
         signatures__user=request.user
-    ).distinct()
+    ).distinct().order_by('-created_at')
 
-    serializer = QuoteSerializer(quotes, many=True, context={'request': request})
-    return Response(serializer.data)
+    return paginate_queryset_response(
+        request,
+        quotes,
+        QuoteSerializer,
+        context={'request': request},
+    )
 
 @api_view(['GET'])
 @permission_classes([IsApprovedUser])
@@ -383,9 +418,13 @@ def submit_signature(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def submitted_unapproved_quotes(request):
-    quotes = Quote.objects.filter(created_by=request.user, approved=False)
-    serializer = QuoteSerializer(quotes, many=True)
-    return Response(serializer.data)
+    quotes = Quote.objects.filter(created_by=request.user, approved=False).order_by('-created_at')
+    return paginate_queryset_response(
+        request,
+        quotes,
+        QuoteSerializer,
+        context={'request': request},
+    )
 
 class MeView(APIView):
     permission_classes = [IsApprovedUser]  # or IsAuthenticated if you want even unapproved users to edit settings
@@ -407,21 +446,53 @@ class LogoutView(APIView):
         logout(request)
         return Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
 
+def get_rarity_order_expression():
+    rarity_order = {
+        'common': 0,
+        'uncommon': 1,
+        'rare': 2,
+        'epic': 3,
+        'legendary': 4,
+    }
+    return Case(*[
+        When(rank=rank, then=Value(rank_order))
+        for rank, rank_order in rarity_order.items()
+    ], output_field=IntegerField())
+
+
 class QuoteViewSet(viewsets.ModelViewSet):
     queryset = Quote.objects.all()
     serializer_class = QuoteSerializer
     permission_classes = [IsApprovedUser]
+    pagination_class = QuoteListPagination
 
 
     def get_queryset(self):
         user = self.request.user
+        base_queryset = Quote.objects.filter(approved=True)
+
         if user.is_superuser:
-            return Quote.objects.filter(approved=True)
-        return Quote.objects.filter(
-            approved=True
-        ).filter(
-            Q(visible=True) | Q(participants=user)
-        ).distinct()
+            base_queryset = base_queryset
+        else:
+            base_queryset = base_queryset.filter(Q(visible=True) | Q(participants=user)).distinct()
+
+        sort_by = self.request.query_params.get("sort_by", "date")
+        sort_direction = self.request.query_params.get("sort_direction", "desc")
+
+        if sort_by == "rarity":
+            rarity_order = get_rarity_order_expression()
+            if sort_direction == "asc":
+                return base_queryset.order_by(rarity_order.asc(), "created_at", "id")
+            return base_queryset.order_by(rarity_order.desc(), "-created_at", "-id")
+
+        if sort_by == "created":
+            if sort_direction == "asc":
+                return base_queryset.order_by("created_at", "id")
+            return base_queryset.order_by("-created_at", "-id")
+
+        if sort_direction == "asc":
+            return base_queryset.order_by("date", "created_at", "id")
+        return base_queryset.order_by("-date", "-created_at", "-id")
 
     def perform_create(self, serializer):
         user = self.request.user

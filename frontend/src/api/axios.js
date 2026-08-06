@@ -1,9 +1,13 @@
 // src/utils/api.js
 import axios from "axios";
+import { getRequestCacheKey, invalidateRequestCacheEntries } from "./requestCache";
 
 export function getApiBaseUrl() {
   return process.env.REACT_APP_API_BASE_URL || "/";
 }
+
+export const requestCache = new Map();
+const pendingRequests = new Map();
 
 // Create Axios instance
 const api = axios.create({
@@ -19,6 +23,38 @@ api.interceptors.request.use(config => {
   }
   return config;
 });
+
+const originalGet = api.get.bind(api);
+api.get = function getWithCache(url, config = {}) {
+  const cacheKey = getRequestCacheKey({ method: "get", url, params: config.params });
+  const cached = requestCache.get(cacheKey);
+  if (cached) {
+    return Promise.resolve(cached);
+  }
+
+  const pending = pendingRequests.get(cacheKey);
+  if (pending) {
+    return pending;
+  }
+
+  const request = originalGet(url, config)
+    .then(response => {
+      requestCache.set(cacheKey, response);
+      pendingRequests.delete(cacheKey);
+      return response;
+    })
+    .catch(error => {
+      pendingRequests.delete(cacheKey);
+      throw error;
+    });
+
+  pendingRequests.set(cacheKey, request);
+  return request;
+};
+
+export function clearRequestCache(prefix = null) {
+  invalidateRequestCacheEntries(requestCache, prefix);
+}
 
 // Helper to read cookie by name
 function getCookie(name) {

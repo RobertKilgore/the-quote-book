@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDateForDisplay } from "../utils/date";
 import VisibilityChip from "../components/VisibilityChip";
 import RarityChip from "../components/RarityChip"; 
 import api from "../api/axios";
@@ -124,7 +125,7 @@ export default function QuoteChip({
       ))}
 
       <p className="text-sm mt-2 text-gray-500">
-        {quote.date ? new Date(quote.date).toLocaleDateString() : "Unknown"}
+        {quote.date ? formatDateForDisplay(quote.date) : "Unknown"}
       </p>
 
       <div className="mt-2 flex flex-wrap gap-2">
@@ -139,7 +140,7 @@ export default function QuoteChip({
               <span className="text-red-600 font-semibold">Refusal to sign</span>
             ) : p.signature_image ? (
               <img
-                src={`${p.signature_image}?${new Date().getTime()}`}
+                src={p.signature_image}
                 alt="signature"
                 className="h-6 max-w-[120px] object-contain"
               />
@@ -160,7 +161,7 @@ export default function QuoteChip({
               <span className="text-red-600 font-semibold">Refusal to sign</span>
             ) : g.signature_image ? (
               <img
-                src={`${g.signature_image}?${new Date().getTime()}`}
+                src={g.signature_image}
                 alt="guest signature"
                 className="h-6 max-w-[120px] object-contain"
               />

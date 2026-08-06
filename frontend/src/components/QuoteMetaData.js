@@ -1,6 +1,7 @@
 import React from "react";
 import RarityChip from "./RarityChip";
 import VisibilityChip from "./VisibilityChip";
+import { formatDateForDisplay, parseDateOnly } from "../utils/date";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return null;
@@ -41,11 +42,11 @@ export default function QuoteMetadata({ quote }) {
       {/* Date and Time */}
       <div className="text-center text-sm text-gray-600">
         {quote.date ? (
-          new Date(quote.date) < new Date("1980-06-09") ? (
+          parseDateOnly(quote.date) < new Date("1980-06-09") ? (
             <p><strong>Date:</strong> Ancient History</p>
           ) : (
             <p>
-              <strong>Date:</strong> {new Date(quote.date).toLocaleDateString()} &nbsp;&nbsp;
+              <strong>Date:</strong> {formatDateForDisplay(quote.date)} &nbsp;&nbsp;
               <strong>Time:</strong> {displayTime || "Unknown"}
             </p>
           )

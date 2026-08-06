@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiX, FiPlus } from "react-icons/fi";
-import api from "../api/axios";
+import api, { clearRequestCache } from "../api/axios";
 import getCookie from "../utils/getCookie";
 import { useSignature } from "../context/SignatureContext";
 import { useUnapprovedQuotes } from "../context/UnapprovedQuoteContext";
 import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
+import { normalizeListResponse } from "../utils/normalizeListResponse";
 
 export default function QuoteFormBox({
   title = "New Quote",
@@ -42,7 +43,7 @@ export default function QuoteFormBox({
 
   useEffect(() => {
     api.get("/api/users/", { withCredentials: true })
-      .then((res) => setUsers(res.data))
+      .then((res) => setUsers(normalizeListResponse(res.data)))
       .catch((err) => console.error("Failed to load users", err));
   }, []);
 
@@ -151,6 +152,7 @@ export default function QuoteFormBox({
             },
           });
 
+      clearRequestCache("/api/quotes/");
       refreshAll();
       onSuccess(
         isEdit ? "Quote updated successfully!" : "Quote created!",
