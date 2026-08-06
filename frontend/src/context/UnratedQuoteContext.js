@@ -1,20 +1,28 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import api from "../api/axios";
+import { useUser } from "./UserContext";
 
 const UnratedQuoteContext = createContext();
 
 export function UnratedQuoteProvider({ children }) {
   const [unratedCount, setUnratedCount] = useState(0);
+  const userContext = useUser();
+  const user = userContext?.user;
 
   const refreshUnratedCount = useCallback(() => {
-    api.get("/quotes/unrated/count/", { withCredentials: true })
+    if (!user) {
+      setUnratedCount(0);
+      return;
+    }
+
+    api.get("/quotes/unrated/count/", { withCredentials: true, cache: false })
       .then(res => {
         setUnratedCount(res.data.count);
       })
       .catch(() => {
         setUnratedCount(0);
       });
-  }, []);
+  }, [user?.id, user?.isSuperuser]);
 
   useEffect(() => {
     refreshUnratedCount();

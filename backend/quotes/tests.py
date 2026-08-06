@@ -56,3 +56,11 @@ class QuoteListPaginationTests(TestCase):
         self.assertGreaterEqual(len(response.data["results"]), 2)
         self.assertEqual(response.data["results"][0]["id"], newer_quote.id)
         self.assertEqual(response.data["results"][1]["id"], older_quote.id)
+
+    def test_submitted_unapproved_quotes_count_for_non_admin(self):
+        Quote.objects.create(created_by=self.user, approved=False, visible=False)
+
+        response = self.client.get("/api/quotes/submitted/count/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)

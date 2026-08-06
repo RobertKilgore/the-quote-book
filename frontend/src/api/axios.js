@@ -26,7 +26,7 @@ api.interceptors.request.use(config => {
 
 const originalGet = api.get.bind(api);
 api.get = function getWithCache(url, config = {}) {
-  const shouldUseCache = config.cache !== false && config.skipCache !== true;
+  const shouldUseCache = !shouldBypassCache(url, config);
 
   if (!shouldUseCache) {
     return originalGet(url, config);
@@ -60,6 +60,12 @@ api.get = function getWithCache(url, config = {}) {
 
 export function clearRequestCache(prefix = null) {
   invalidateRequestCacheEntries(requestCache, prefix);
+}
+
+export function shouldBypassCache(url, config = {}) {
+  const normalizedUrl = (url || "").startsWith("/") ? (url || "") : `/${url || ""}`;
+  const isAuthRoute = normalizedUrl.includes("/api/test-auth/") || normalizedUrl.includes("/auth/login/") || normalizedUrl.includes("/auth/logout/");
+  return Boolean(config.cache === false || config.skipCache === true || isAuthRoute);
 }
 
 // Helper to read cookie by name

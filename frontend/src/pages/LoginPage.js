@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import api from "../api/axios";
+import api, { clearRequestCache } from "../api/axios";
 import getCookie from "../utils/getCookie";
 import useAppContext from "../context/useAppContext";
 
@@ -21,6 +21,7 @@ function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
+    clearRequestCache();
     try {
       await api.post(
         "/auth/login/",
@@ -35,6 +36,7 @@ function LoginPage() {
 
       const res = await api.get("/api/test-auth/", {
         withCredentials: true,
+        cache: false,
       });
 
         setUser({

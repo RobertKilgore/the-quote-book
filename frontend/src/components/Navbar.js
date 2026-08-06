@@ -1,7 +1,7 @@
 import React, { useState, useLayoutEffect, useRef, useEffect  } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
-import api from "../api/axios";
+import api, { clearRequestCache } from "../api/axios";
 import getCookie from "../utils/getCookie";
 import NavButtons from "./NavButtons";
 import { useNavbar } from "../context/NavbarContext";
@@ -25,6 +25,7 @@ export default function Navbar({ loading }) {
 
   const handleLogout = async () => {
     try {
+      clearRequestCache();
       await api.post("/auth/logout/", {}, {
         withCredentials: true,
         headers: { "X-CSRFToken": getCookie("csrftoken") },

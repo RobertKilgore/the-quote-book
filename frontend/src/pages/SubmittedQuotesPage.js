@@ -5,7 +5,7 @@ export default function SubmittedQuotesPage() {
     <QuoteListPage
       fetchUrl="/api/quotes/submitted/"
       scrollKey="submitted"
-      title="Unapproved Quotes"
+      title="My Submitted Unapproved Quotes"
       emptyTitle="Nothing to review!"
       emptyMessage="No unapproved quotes — looks like everyone’s on the same page!"
       quoteChipProps={{

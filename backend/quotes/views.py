@@ -426,6 +426,12 @@ def submitted_unapproved_quotes(request):
         context={'request': request},
     )
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def submitted_unapproved_quotes_count(request):
+    count = Quote.objects.filter(created_by=request.user, approved=False).count()
+    return Response({"count": count})
+
 class MeView(APIView):
     permission_classes = [IsApprovedUser]  # or IsAuthenticated if you want even unapproved users to edit settings
 

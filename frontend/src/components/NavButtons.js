@@ -54,7 +54,7 @@ export default function NavButtons({
           size={isBar ? 24 : 20}
           title={isAdmin ? "Unapproved Quotes" : "Your Unapproved Submissions"}
         />
-        {isAdmin && unapprovedCount > 0 && (
+        {unapprovedCount > 0 && (
           <span className="absolute -top-0 right-1 bg-purple-500 text-white text-xs font-bold px-1 py-0 rounded-full">
             {unapprovedCount}
           </span>

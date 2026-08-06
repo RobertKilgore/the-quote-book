@@ -18,25 +18,25 @@ import { SuccessProvider } from "./context/SuccessContext";
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <UnapprovedQuoteProvider>
-      <SignatureProvider>
-          <UnapprovedUserProvider>
-            <NavbarProvider>
-              <UnratedQuoteProvider>
-                <FlaggedQuoteProvider>
-                  <UserProvider>
-                    <ErrorProvider>
-                      <SuccessProvider>
-                        <div id="root" className="max-w-full overflow-x-hidden"><App /></div>
-                      </SuccessProvider>
-                    </ErrorProvider>
-                  </UserProvider>
-                </FlaggedQuoteProvider>
-              </UnratedQuoteProvider>
-            </NavbarProvider>
-          </UnapprovedUserProvider>
-      </SignatureProvider>
-    </UnapprovedQuoteProvider>
+    <UserProvider>
+      <ErrorProvider>
+        <SuccessProvider>
+          <UnapprovedQuoteProvider>
+            <SignatureProvider>
+              <UnapprovedUserProvider>
+                <NavbarProvider>
+                  <UnratedQuoteProvider>
+                    <FlaggedQuoteProvider>
+                      <div id="root" className="max-w-full overflow-x-hidden"><App /></div>
+                    </FlaggedQuoteProvider>
+                  </UnratedQuoteProvider>
+                </NavbarProvider>
+              </UnapprovedUserProvider>
+            </SignatureProvider>
+          </UnapprovedQuoteProvider>
+        </SuccessProvider>
+      </ErrorProvider>
+    </UserProvider>
   </React.StrictMode>
 );
 

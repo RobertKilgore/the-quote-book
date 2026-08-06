@@ -39,6 +39,7 @@ urlpatterns = [
     path('debug/refuse/', views.debug_run_refuse),
     path("users/unapproved/count/", views.unapproved_user_count),
     path("api/quotes/submitted/", views.submitted_unapproved_quotes),
+    path("api/quotes/submitted/count/", views.submitted_unapproved_quotes_count),
     path('api/quotes/unapproved/count/', views.unapproved_quotes_count, name='unapproved-quotes-count'),
     path('api/quotes/unapproved/', views.unapproved_quotes, name='unapproved-quotes'),
     path('api/signatures/submit/', views.submit_signature, name='submit-signature'),

@@ -11,7 +11,7 @@ export function UserProvider({ children }) {
   //const [error, setError] = useError();
 
   useEffect(() => {
-    api.get("/api/test-auth/", { withCredentials: true })
+    api.get("/api/test-auth/", { withCredentials: true, cache: false })
       .then(res => {
         setUser({
           id: res.data.id,
