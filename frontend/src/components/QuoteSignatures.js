@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { showConfirm } from "../components/ConfirmDialog";
 import useAppContext from "../context/useAppContext";
@@ -5,11 +6,10 @@ import useAppContext from "../context/useAppContext";
 export default function QuoteSignatures({ quote, setQuote }) {
   const { user, setError } = useAppContext();
   const isAdmin = !!user?.isSuperuser;
-  console.log("QuoteSignatures admin?", user?.is_superuser, "sigId sample:", quote?.participant_status?.[0]?.signature_id);
   const guests = quote.guest_signatures || [];
 
   const refreshQuote = async () => {
-    const res = await api.get(`/api/quotes/${quote.id}/`, { withCredentials: true });
+    const res = await api.get(`/api/quotes/${quote.id}/`, { withCredentials: true, cache: false });
     setQuote(res.data);
   };
 
@@ -34,49 +34,51 @@ export default function QuoteSignatures({ quote, setQuote }) {
     });
   };
 
-  const renderSigBox = (key, name, signature_image, refused, signatureId) => (
-    <div
-      key={key}
-      className="relative border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50"
-    >
-      {isAdmin && signatureId && (
-        <button
-          onClick={() => clearSig(signatureId)}
-          title="Clear signature"
-          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 text-white hover:bg-red-700 flex items-center justify-center shadow"
-        >
-          ✕
-        </button>
-      )}
+  const renderSigBox = (key, name, signature_image, refused, signatureId, canClear) => {
+    return (
+      <div
+        key={key}
+        className="relative border border-gray-300 px-3 py-2 rounded shadow-sm flex flex-col items-center text-sm bg-gray-50"
+      >
+        {isAdmin && signatureId && canClear && (
+          <button
+            onClick={() => clearSig(signatureId)}
+            title="Clear signature"
+            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 text-white hover:bg-red-700 flex items-center justify-center shadow"
+          >
+            ✕
+          </button>
+        )}
 
-      <span className="font-semibold">{name}</span>
+        <span className="font-semibold">{name}</span>
 
-      {refused ? (
-        <div className="h-12 mt-1 min-w-[248px] flex items-center justify-center">
-          <span className="text-red-600 font-medium text-center">Refusal to sign</span>
-        </div>
-      ) : signature_image ? (
-        <img
-          src={signature_image}
-          alt="signature"
-          className="h-12 mt-1 min-w-[248px] object-contain"
-        />
-      ) : (
-        <div className="h-12 mt-1 min-w-[248px] flex items-center justify-center">
-          <span className="text-gray-400 italic text-center">No signature yet</span>
-        </div>
-      )}
-    </div>
-  );
+        {refused ? (
+          <div className="h-12 mt-1 min-w-[248px] flex items-center justify-center">
+            <span className="text-red-600 font-medium text-center">Refusal to sign</span>
+          </div>
+        ) : signature_image ? (
+          <img
+            src={signature_image}
+            alt="signature"
+            className="h-12 mt-1 min-w-[248px] object-contain"
+          />
+        ) : (
+          <div className="h-12 mt-1 min-w-[248px] flex items-center justify-center">
+            <span className="text-gray-400 italic text-center">No signature yet</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-wrap gap-3 mt-6">
       {quote.participant_status?.map((p) =>
-        renderSigBox(p.user, p.name, p.signature_image, p.refused, p.signature_id)
+        renderSigBox(p.user, p.name, p.signature_image, p.refused, p.signature_id, p.can_clear)
       )}
 
       {guests.map((g) =>
-        renderSigBox(`guest-${g.id}`, g.name, g.signature_image, g.refused, g.id)
+        renderSigBox(`guest-${g.id}`, g.name, g.signature_image, g.refused, g.id, g.refused || !!g.signature_image)
       )}
     </div>
   );

@@ -28,8 +28,11 @@ export default function SignaturePads({ quote, setQuote }) {
       })
       .map(p => p.id);
 
-    setVisibleIds(prev => Array.from(new Set([...prev, ...fresh])));
-  }, [quote]);
+    setVisibleIds(prev => {
+      const next = Array.from(new Set([...prev, ...fresh]));
+      return next.filter(id => fresh.includes(id));
+    });
+  }, [quote.id, quote.signatures, quote.participants_detail]);
 
   const handleFadeOut = (id) => setVisibleIds(prev => prev.filter(x => x !== id));
 

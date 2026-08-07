@@ -6,10 +6,10 @@ import api           from "../api/axios";
 import getCookie     from "../utils/getCookie";
 import useAppContext from "../context/useAppContext";
 import useRefreshAllQuoteCtx from "../utils/refreshAllQuoteContexts";
+import { getCountdownText } from "../utils/countdown";
 
 const SIG_RATIO     = 4;
 const FADE_DURATION = 500;        // ms – match Tailwind
-const MS_DAY        = 86_400_000;
 
 export default function SignaturePadSingle({
   signerId,          // user id OR undefined/null for guest pad
@@ -35,25 +35,23 @@ export default function SignaturePadSingle({
 
   /* ───────────── countdown (registered users only) ───────────── */
   useEffect(() => {
-    if (isGuest || !quote.approved || !quote.approved_at) return;
+    if (isGuest) return;
 
-    // approved_at + 14 days, then roll to next midnight
-    const base   = new Date(quote.approved_at).getTime() + 14 * MS_DAY;
-    const mid    = new Date(base); mid.setHours(0,0,0,0);
-    const expiry = base > mid ? mid.getTime() + MS_DAY : mid.getTime();
+    const participant = quote.participant_status?.find((entry) => entry.user === signerId);
+    const sig = quote.signatures?.find((entry) => entry.user === signerId);
+    const deadlineAt = participant?.deadline_at ?? sig?.deadline_at ?? null;
+    const countdownText = getCountdownText(deadlineAt, Date.now());
+    setTimer(countdownText ?? "");
+
+    if (!deadlineAt) return;
 
     const intId = setInterval(() => {
-      const diff = expiry - Date.now();
-      if (diff <= 0) { setTimer("Expired"); clearInterval(intId); return; }
-      const d  = Math.floor(diff / MS_DAY);
-      const h  = Math.floor((diff / 3_600_000) % 24).toString().padStart(2,"0");
-      const m  = Math.floor((diff /   60_000) % 60).toString().padStart(2,"0");
-      const s  = Math.floor((diff /    1_000) % 60).toString().padStart(2,"0");
-      setTimer(`${d}:${h}:${m}:${s}`);
+      const nextText = getCountdownText(deadlineAt, Date.now());
+      setTimer(nextText ?? "");
     }, 1_000);
 
     return () => clearInterval(intId);
-  }, [isGuest, quote.approved, quote.approved_at]);
+  }, [isGuest, signerId, quote.participant_status, quote.signatures]);
 
   /* ───────────── draw guide line + X ───────────── */
   const drawGuide = () => {
@@ -94,7 +92,7 @@ export default function SignaturePadSingle({
 
   /* ───────────── API helpers ───────────── */
   const refreshQuote = async () => {
-    const { data } = await api.get(`/api/quotes/${quote.id}/`, { withCredentials:true });
+    const { data } = await api.get(`/api/quotes/${quote.id}/`, { withCredentials:true, cache:false });
     setQuote(data); return data;
   };
 

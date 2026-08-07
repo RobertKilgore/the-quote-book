@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Quote, QuoteLine, Signature, AccountRequest
+from django.utils import timezone
 from django.contrib.auth.models import User
 from allauth.account import app_settings as allauth_settings
 import logging
@@ -58,7 +59,13 @@ class SignatureSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Signature
-        fields = ['id', 'user', 'guest_name', 'signature_image', 'refused', 'signed_at', 'name']
+        fields = ['id', 'user', 'guest_name', 'signature_image', 'refused', 'signed_at', 'deadline_at', 'expired_at', 'last_notified_at', 'name']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.refused and not instance.signature_image:
+            data['signature_image'] = None
+        return data
 
     def get_name(self, obj):
         return obj.guest_name or (obj.user.get_full_name() if obj.user else "")
@@ -181,7 +188,10 @@ class QuoteSerializer(serializers.ModelSerializer):
         return votes_by_rarity
 
     def get_user_rarity_vote(self, obj):
-        user = self.context['request'].user
+        request = self.context.get('request')
+        if not request or not getattr(request, 'user', None):
+            return None
+        user = request.user
         vote = obj.rank_votes.filter(user=user).first()
         return vote.rarity if vote else None
 
@@ -190,12 +200,17 @@ class QuoteSerializer(serializers.ModelSerializer):
 
     def get_flagged_by_users(self, obj):
         request = self.context.get("request")
-        if request and request.user.is_superuser:
+        if not request or not getattr(request, 'user', None):
+            return None
+        if request.user.is_superuser:
             return [{"id": user.id, "name": user.get_full_name() or user.username} for user in obj.flagged_by.all()]
         return None
         
     def get_has_flagged(self, obj):
-        user = self.context.get('request').user
+        request = self.context.get('request')
+        if not request or not getattr(request, 'user', None):
+            return False
+        user = request.user
         return user.is_authenticated and obj.flagged_by.filter(id=user.id).exists()
     
 
@@ -203,13 +218,21 @@ class QuoteSerializer(serializers.ModelSerializer):
         result = []
         for user in obj.participants.all():
             sig = obj.signatures.filter(user=user).first()
+            if sig and (sig.signature_image or sig.refused):
+                deadline_at = None
+            else:
+                deadline_at = sig.deadline_at if sig else None
+
             result.append({
                 "user": user.id,
                 "name": user.get_full_name() or user.username,
                 "signature_image": sig.signature_image.url if sig and sig.signature_image else None,
                 "refused": sig.refused if sig else False,
                 "signed_at": sig.signed_at if sig else None,
+                "deadline_at": deadline_at,
+                "last_notified_at": sig.last_notified_at if sig else None,
                 "signature_id": sig.id if sig else None,
+                "can_clear": bool(sig and (sig.signature_image or sig.refused)),
             })
         return result
     
@@ -220,14 +243,19 @@ class QuoteSerializer(serializers.ModelSerializer):
                 "name": sig.guest_name,
                 "signature_image": sig.signature_image.url if sig.signature_image else None,
                 "refused": sig.refused,
+                "deadline_at": sig.deadline_at,
+                "last_notified_at": sig.last_notified_at,
             }
             for sig in quote.signatures.filter(user__isnull=True)
+            if sig.signature_image or sig.refused
         ]
 
 
     def create(self, validated_data):
-        request = self.context['request']
-        
+        request = self.context.get('request')
+        if not request:
+            raise serializers.ValidationError({"request": "Request context is required."})
+
         # Remove fields that will be manually handled
         validated_data.pop('participants', None)
         validated_data.pop('lines', None)
@@ -241,6 +269,7 @@ class QuoteSerializer(serializers.ModelSerializer):
 
         quote = Quote.objects.create(created_by=request.user, **validated_data)
         quote.participants.set(participant_ids)
+        quote.reset_participant_deadlines(reopened=False)
 
         for line_data in lines_data:
             user_id = line_data.pop('user_id', None)
@@ -250,8 +279,9 @@ class QuoteSerializer(serializers.ModelSerializer):
         return quote
 
     def update(self, instance, validated_data):
-        request = self.context['request']
-        
+        request = self.context.get('request')
+        if not request:
+            raise serializers.ValidationError({"request": "Request context is required."})
 
         instance.quote_notes = request.data.get("quote_notes", "")
         instance.quote_source = request.data.get("quote_source", "")
@@ -281,10 +311,12 @@ class QuoteSerializer(serializers.ModelSerializer):
         except json.JSONDecodeError:
             raise serializers.ValidationError("Invalid JSON for lines or participants.")
 
-        # Clear old data
-        Signature.objects.filter(quote=instance).delete()
+        # Editing a quote should clear non-guest signatures and reset each participant's deadline
+        # according to the configured signature window, while preserving guest responses.
+        Signature.objects.filter(quote=instance, user__isnull=False).delete()
         instance.lines.all().delete()
         instance.participants.set(participant_ids)
+        instance.reset_participant_deadlines(reopened=False)
 
         # Update quote fields
         for attr, value in validated_data.items():
@@ -301,9 +333,12 @@ class QuoteSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        # Manually ensure participants are serialized if missing
         data["participants"] = UserSerializer(instance.participants.all(), many=True).data
-
+        data["signatures"] = [
+            signature_data
+            for signature_data in data.get("signatures", [])
+            if signature_data.get("signature_image") is not None or signature_data.get("refused") is True
+        ]
 
         return data
 

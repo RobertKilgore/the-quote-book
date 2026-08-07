@@ -18,6 +18,7 @@ import DebugJobsPage from "./pages/DebugJobsPage";
 import UnratedQuotesPage from "./pages/UnratedQuotesPage";
 import FlaggedQuotesPage from "./pages/FlaggedQuotesPage";
 import UserSettingsPage from "./pages/UserSettingsPage";
+import AdminSettingsPage from "./pages/AdminSettingsPage";
 
 
 import useAppContext from "./context/useAppContext";
@@ -93,6 +94,15 @@ function AppRoutes({ loading }) {
           <PrivateRoute loading={loading}>
             <UserSettingsPage loading={loading} />
           </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/admin-settings"
+        element={
+          <AdminRoute loading={loading}>
+            <AdminSettingsPage loading={loading} />
+          </AdminRoute>
         }
       />
 

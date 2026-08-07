@@ -1,4 +1,6 @@
 from django.apps import AppConfig
+import os
+from django.db import close_old_connections
 
 
 class SchedulerConfig(AppConfig):
@@ -6,22 +8,25 @@ class SchedulerConfig(AppConfig):
     name = 'scheduler'
 
     def ready(self):
-            from apscheduler.schedulers.background import BackgroundScheduler
-            from django_apscheduler.jobstores import DjangoJobStore, register_events
-            from .jobs import auto_refuse_stale_quotes
+        if os.environ.get("RUN_MAIN") != "true":
+            return
 
-            scheduler = BackgroundScheduler()
-            scheduler.add_jobstore(DjangoJobStore(), "default")
+        print("[scheduler] starting background scheduler")
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.jobstores.memory import MemoryJobStore
+        from django_apscheduler.jobstores import register_events
+        from .jobs import process_signature_timeline
 
-            # Every day at midnight
-            scheduler.add_job(
-                auto_refuse_stale_quotes,
-                trigger='cron',
-                hour=0,
-                minute=0,
-                id='auto_refuse_stale_quotes',
-                replace_existing=True,
-            )
+        scheduler = BackgroundScheduler(job_defaults={'coalesce': True, 'max_instances': 1, 'misfire_grace_time': 60})
+        scheduler.add_jobstore(MemoryJobStore(), "default")
 
-            register_events(scheduler)
-            scheduler.start()
+        scheduler.add_job(
+            process_signature_timeline,
+            trigger='interval',
+            seconds=3,
+            id='process_signature_timeline',
+            replace_existing=True,
+        )
+
+        register_events(scheduler)
+        scheduler.start()

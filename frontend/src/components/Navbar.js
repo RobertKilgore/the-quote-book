@@ -144,6 +144,16 @@ export default function Navbar({ loading }) {
                         Account Settings
                       </Link>
 
+                      {user?.isSuperuser && (
+                        <Link
+                          to="/admin-settings"
+                          className="block px-3 py-1 text-center bg-gray-100 hover:bg-gray-200 rounded"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Admin Settings
+                        </Link>
+                      )}
+
                       {/* centered, smaller logout button */}
                       <div className="flex justify-center">
                         <button

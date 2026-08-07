@@ -23,10 +23,9 @@ from django.utils import timezone
 import base64
 from .models import AccountRequest
 from .serializers import AccountRequestSerializer
-from scheduler.jobs import auto_refuse_stale_quotes
 from .serializers import UserSettingsSerializer
 from .serializers import QuoteRankVoteSerializer
-from .models import update_quote_rank, RARITY_CHOICES
+from .models import update_quote_rank, RARITY_CHOICES, SignatureTimelineConfig
 
 
 
@@ -211,17 +210,47 @@ def flag_quote(request, quote_id):
     except Quote.DoesNotExist:
         return Response({"error": "Quote not found."}, status=status.HTTP_404_NOT_FOUND)
 
-@api_view(["POST"])
-@permission_classes([IsSuperUser])
-def debug_run_refuse(request):
-    auto_refuse_stale_quotes(15)
-    return Response({"status": "Manually triggered"}, status=200)
-
 @api_view(['GET'])  # ✅ Required for DRF to set renderer & context
 @permission_classes([IsApprovedUser])
 def test_auth(request):
     user_data = UserSerializer(request.user).data  # serialize user properly
     return Response(user_data)
+
+@api_view(['GET', 'PATCH'])
+@permission_classes([IsSuperUser])
+def admin_settings(request):
+    config = SignatureTimelineConfig.objects.order_by('-created_at').first() or SignatureTimelineConfig.objects.create()
+
+    if request.method == 'GET':
+        return Response({
+            "initial_window_days": config.initial_window_seconds // 86400,
+            "reopen_window_days": config.reopen_window_seconds // 86400,
+            "initial_window_seconds": config.initial_window_seconds,
+            "reopen_window_seconds": config.reopen_window_seconds,
+        })
+
+    initial_window_days = request.data.get('initial_window_days')
+    reopen_window_days = request.data.get('reopen_window_days')
+    initial_window_seconds = request.data.get('initial_window_seconds')
+    reopen_window_seconds = request.data.get('reopen_window_seconds')
+
+    if initial_window_seconds is not None:
+        config.initial_window_seconds = int(initial_window_seconds)
+    elif initial_window_days is not None:
+        config.initial_window_seconds = int(initial_window_days) * 86400
+
+    if reopen_window_seconds is not None:
+        config.reopen_window_seconds = int(reopen_window_seconds)
+    elif reopen_window_days is not None:
+        config.reopen_window_seconds = int(reopen_window_days) * 86400
+
+    config.save()
+    return Response({
+        "initial_window_days": config.initial_window_seconds // 86400,
+        "reopen_window_days": config.reopen_window_seconds // 86400,
+        "initial_window_seconds": config.initial_window_seconds,
+        "reopen_window_seconds": config.reopen_window_seconds,
+    })
 
 def get_csrf(request):
     return JsonResponse({'csrfToken': request.META.get('CSRF_COOKIE', '')})
@@ -296,9 +325,6 @@ def refuse_signature(request):
     if not quote_id:
         return Response({'error': 'Quote ID is required'}, status=400)
 
-    if not sign_as_user_id and not guest_name:
-        return Response({'error': 'Must provide either sign_as_user_id or guest_name'}, status=400)
-
     quote = get_object_or_404(Quote, id=quote_id)
 
     # Determine actual signer
@@ -316,31 +342,66 @@ def refuse_signature(request):
         if signer not in quote.participants.all():
             return Response({'error': 'User is not a participant for this quote'}, status=403)
 
-        # Check for duplicate
-        if Signature.objects.filter(quote=quote, user=signer).exists():
+        existing_signature = Signature.objects.filter(quote=quote, user=signer).first()
+        if existing_signature and existing_signature.signature_image:
             return Response({'error': 'Signature already exists'}, status=400)
 
         # Save refusal
-        Signature.objects.create(quote=quote, user=signer, refused=True)
+        sig, created = Signature.objects.get_or_create(quote=quote, user=signer)
+        if created:
+            print(f"[signature] created signature {sig.id} for quote {quote.id} user {signer.id} during refusal flow")
+        sig.refused = True
+        sig.signature_image = None
+        sig.deadline_at = None
+        sig.expired_at = None
+        sig.reminder_sent_at = None
+        sig.save(update_fields=["refused", "signature_image", "deadline_at", "expired_at", "reminder_sent_at"])
+        sig.schedule_timeline_events(event_type='quote_reopened', base_time=timezone.now())
 
     else:
-        guest_name = normalize_name(guest_name)
-        if not guest_name:
-            return Response({'error': 'Guest name cannot be empty'}, status=400)
+        if guest_name:
+            guest_name = normalize_name(guest_name)
+            if not guest_name:
+                return Response({'error': 'Guest name cannot be empty'}, status=400)
 
-        # ✅ block impersonation of real users (username OR full name)
-        if guest_name_conflicts_with_user(guest_name):
-            return Response({'error': 'Guest name conflicts with an existing user'}, status=400)
+            # ✅ block impersonation of real users (username OR full name)
+            if guest_name_conflicts_with_user(guest_name):
+                return Response({'error': 'Guest name conflicts with an existing user'}, status=400)
 
-        # ✅ prevent duplicate guest (case-insensitive) on this quote
-        if Signature.objects.filter(
-            quote=quote,
-            user__isnull=True,
-            guest_name__iexact=guest_name
-        ).exists():
-            return Response({'error': 'Guest has already responded'}, status=400)
+            # ✅ prevent duplicate guest (case-insensitive) on this quote
+            if Signature.objects.filter(
+                quote=quote,
+                user__isnull=True,
+                guest_name__iexact=guest_name
+            ).exists():
+                return Response({'error': 'Guest has already responded'}, status=400)
 
-        Signature.objects.create(quote=quote, user=None, guest_name=guest_name, refused=True)
+            sig, created = Signature.objects.get_or_create(quote=quote, user=None, guest_name=guest_name)
+            if created:
+                print(f"[signature] created signature {sig.id} for quote {quote.id} guest {guest_name} during refusal flow")
+            sig.refused = True
+            sig.signature_image = None
+            sig.deadline_at = None
+            sig.expired_at = None
+            sig.reminder_sent_at = None
+            sig.save(update_fields=["refused", "signature_image", "deadline_at", "expired_at", "reminder_sent_at"])
+            sig.schedule_timeline_events(event_type='quote_reopened', base_time=timezone.now())
+        else:
+            signer = request.user
+            if signer not in quote.participants.all():
+                return Response({'error': 'User is not a participant for this quote'}, status=403)
+
+            sig, created = Signature.objects.get_or_create(quote=quote, user=signer)
+            if sig.signature_image:
+                return Response({'error': 'Signature already exists'}, status=400)
+            if created:
+                config = quote.get_timeline_config()
+                sig.deadline_at = timezone.now() + timezone.timedelta(seconds=config.initial_window_seconds)
+            sig.refused = True
+            sig.signature_image = None
+            sig.expired_at = None
+            sig.reminder_sent_at = None
+            sig.save(update_fields=["refused", "signature_image", "deadline_at", "expired_at", "reminder_sent_at"])
 
     return Response({'success': 'Refusal recorded'})
 
@@ -373,7 +434,9 @@ def submit_signature(request):
 
         # Create or get existing signature
         if signer:
-            sig, _ = Signature.objects.get_or_create(quote=quote, user=signer)
+            sig, created = Signature.objects.get_or_create(quote=quote, user=signer)
+            if created:
+                print(f"[signature] created signature {sig.id} for quote {quote.id} user {signer.id} during submission")
             sig.guest_name = ""  # Clear any previous guest name
         else:
             guest_name = normalize_name(guest_name)
@@ -392,11 +455,13 @@ def submit_signature(request):
             ).exists():
                 return Response({'error': 'Guest has already responded'}, status=400)
 
-            sig, _ = Signature.objects.get_or_create(
+            sig, created = Signature.objects.get_or_create(
                 quote=quote,
                 user=None,
                 guest_name=guest_name
             )
+            if created:
+                print(f"[signature] created signature {sig.id} for quote {quote.id} guest {guest_name} during submission")
 
         # Replace image
         if sig.signature_image:
@@ -404,7 +469,11 @@ def submit_signature(request):
 
         sig.signature_image = data
         sig.refused = False
+        sig.deadline_at = None
+        sig.expired_at = None
+        sig.reminder_sent_at = None
         sig.save()
+        sig.schedule_timeline_events(event_type='quote_reopened', base_time=timezone.now())
 
         return Response({"success": True}, status=200)
 
@@ -619,8 +688,30 @@ class QuoteViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("You do not have access to this unapproved quote.")
         else:
             # For approved quotes, user must be admin, participant, or visibility = True
-            if not quote.visible and user not in quote.participants.all() and not user.is_superuser and  user == quote.created_by:
+            if not quote.visible and user not in quote.participants.all() and not user.is_superuser and user != quote.created_by:
                 raise PermissionDenied("You do not have access to this quote.")
+
+        now = timezone.now()
+
+        for participant in quote.participants.all():
+            signature = Signature.objects.filter(quote=quote, user=participant).first()
+            if signature is None:
+                continue
+
+            if signature.signature_image:
+                continue
+
+            if signature.refused:
+                if signature.deadline_at is not None:
+                    signature.deadline_at = None
+                    signature.save(update_fields=['deadline_at'])
+                continue
+
+            if signature.deadline_at and signature.deadline_at <= now:
+                signature.refused = True
+                signature.expired_at = now
+                signature.deadline_at = None
+                signature.save(update_fields=['refused', 'expired_at', 'deadline_at'])
 
         serializer = self.get_serializer(quote)
         return Response(serializer.data)
@@ -670,7 +761,7 @@ class SignatureViewSet(viewsets.ModelViewSet):
 
         sig = self.get_object()
 
-        sig.delete()
+        sig.admin_clear()
         return Response({"ok": True})
 
 class QuoteLineViewSet(viewsets.ModelViewSet):

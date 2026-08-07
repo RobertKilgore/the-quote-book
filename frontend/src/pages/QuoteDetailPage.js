@@ -1,16 +1,9 @@
-import React, { useEffect, useState, useRef, Component } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { FiX, FiPenTool} from "react-icons/fi";
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import api from "../api/axios";
-import SignaturePad from "signature_pad";
-import { confirmAlert } from "react-confirm-alert";
-import useRefreshAllQuoteContexts from "../utils/refreshAllQuoteContexts";
-import getCookie from "../utils/getCookie";
-import VisibilityChip from "../components/VisibilityChip";
-import RarityChip from "../components/RarityChip"; 
 import useAppContext from "../context/useAppContext";
 import QuoteRarityVote from "../components/QuoteRarityVote";
-import QuoteBody from "../components/QuoteBody"
+import QuoteBody from "../components/QuoteBody";
 import SignaturePads from "../components/SignaturePads";
 import QuoteMetaMetadata from "../components/QuoteMetaMetadata";
 import QuoteActions from "../components/QuoteActions";
@@ -26,23 +19,46 @@ const rarityColors = {
 
 
 function QuoteDetailPage() {
-  const { user, setUser, setError, setSuccess, loading, setLoading } = useAppContext();
+  const { user, setError, setLoading } = useAppContext();
   const { id } = useParams();
-  const navigate = useNavigate();
   const [quote, setQuote] = useState(null);
 
+  const loadQuote = useCallback(() => {
+    if (!user || !id) return;
+
+    api
+      .get(`/api/quotes/${id}/`, { withCredentials: true, cache: false })
+      .then((res) => setQuote(res.data))
+      .catch(() => setError("This quote is either private or could not be found."));
+  }, [id, user, setError]);
+
   useEffect(() => {
-    if (user && id) {
-      setQuote(null);
-      api
-        .get(`/api/quotes/${id}/`, { withCredentials: true, cache: false })
-        .then((res) => setQuote(res.data))
-        .catch(() =>
-          setError("This quote is either private or could not be found.")
-        )
-        .finally(() => setLoading(false));
-    }
-  }, [id, user]);
+    if (!user || !id) return;
+
+    loadQuote();
+    setLoading(false);
+  }, [id, user, loadQuote, setLoading]);
+
+  useEffect(() => {
+    if (!quote?.participant_status?.length) return;
+
+    const deadlines = quote.participant_status
+      .map((entry) => entry.deadline_at)
+      .filter(Boolean)
+      .map((value) => new Date(value).getTime())
+      .filter((value) => Number.isFinite(value));
+
+    if (!deadlines.length) return;
+
+    const nextDeadline = Math.min(...deadlines);
+    const timeoutMs = Math.max(nextDeadline - Date.now(), 0);
+
+    const timeoutId = window.setTimeout(() => {
+      loadQuote();
+    }, timeoutMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [quote?.participant_status, loadQuote]);
  
   if (!quote || !user) return null;
 
